@@ -1,0 +1,8 @@
+﻿target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+node_modules/
+.env

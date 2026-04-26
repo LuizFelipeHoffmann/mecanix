@@ -1,0 +1,49 @@
+================================================================
+  MECANIX — Como rodar (versão final)
+================================================================
+
+PASSO 1 — Abra o VS Code como ADMINISTRADOR
+  Clique direito no ícone do VS Code → Executar como administrador
+
+PASSO 2 — Abra a pasta do projeto
+  File → Open Folder → selecione: mecanix-v4
+
+PASSO 3 — Crie o banco (só na primeira vez)
+  Abra o pgAdmin 4
+  Clique direito em "Databases" → Create → Database
+  Nome: mecanix_db → Save
+
+  OU no terminal do VS Code:
+  $env:PGPASSWORD = "T@ti1320"
+  $env:PATH += ";C:\Program Files\PostgreSQL\16\bin"
+  psql -U postgres -h 127.0.0.1 -p 5432 -d postgres -c "CREATE DATABASE mecanix_db"
+
+PASSO 4 — Inicie o servidor Java
+  Cole no terminal do VS Code:
+
+  cd C:\Users\LUIZ\Desktop\mecanix-v4\backend
+  $env:JAVA_HOME = (Get-Command java).Source -replace '\\bin\\java.exe',''
+  $env:PGPASSWORD = "T@ti1320"
+  
+  
+
+  Aguarde:
+  ╔══════════════════════════════════════════╗
+  ║  MECANIX iniciado!                       ║
+  ║  Login: admin@mecanix.com / admin123     ║
+  ╚══════════════════════════════════════════╝
+
+  NÃO feche essa janela!
+
+PASSO 5 — Abra o front-end
+  No VS Code, clique com botão direito em frontend/index.html
+  → Open with Live Server
+
+  A URL deve ser: http://localhost:5500/frontend/index.html
+
+LOGINS:
+  admin@mecanix.com    / admin123
+  servicos@mecanix.com / serv123
+  estoque@mecanix.com  / est123
+
+================================================================

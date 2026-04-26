@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>MECANIX — Veículos</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="sb-overlay" id="sb-overlay" onclick="closeSB()"></div>
+<div class="app">
+  <div class="sb" id="sb"></div>
+  <div class="mn">
+    <div class="topbar">
+      <div class="menu-btn" onclick="toggleSB()"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></div>
+      <div class="ptitle" id="ptitle"></div>
+      <div class="pdate" id="pdate"></div>
+      <div id="top-act"></div>
+    </div>
+    <div class="ct" id="content"><div style="padding:40px;text-align:center;color:var(--tx3)">Carregando...</div></div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/marcas.js"></script>
+<script src="js/sidebar.js"></script>
+<script>
+let selectedMarca = '';
+
+async function main() {
+  const user = await initPage('veiculos', 'Veículos');
+  if (!user) return;
+  document.getElementById('top-act').innerHTML =
+    `<button class="btn btn-p sm" onclick="window.location.href='veiculos.html?action=new'">+ Novo veículo</button>`;
+  const action  = getParam('action');
+  const idParam = getParam('id') ? parseInt(getParam('id')) : null;
+  const cliId   = getParam('clienteId') ? parseInt(getParam('clienteId')) : null;
+  if (action === 'new')              await renderForm(null, cliId);
+  else if (action === 'edit' && idParam) await renderForm(idParam, null);
+  else                               await renderList();
+}
+
+async function renderList() {
+  try {
+    const veiculos = await veiculosAPI.listar();
+    const rows = veiculos.length ? veiculos.map(v => {
+      const col = TIPO_COLORS[v.tipo]||'#7a8099';
+      return `<tr>
+        <td class="osnum">${v.placa}</td>
+        <td style="font-weight:500">${v.marca} ${v.modelo}</td>
+        <td style="color:var(--tx2)">${v.ano||'—'}</td>
+        <td style="color:var(--tx2)">${v.cor||'—'}</td>
+        <td><span style="background:${col}22;color:${col};font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px">${TIPO_LABELS[v.tipo]||v.tipo}</span></td>
+        <td>${v.clienteNome||'—'}</td>
+        <td><span class="badge bbl">${v.totalOrdens} OS</span></td>
+        <td><div class="ib" onclick="window.location.href='veiculos.html?action=edit&id=${v.id}'"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></div></td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:24px">Nenhum veículo cadastrado.</td></tr>`;
+    const mob = veiculos.map(v => {
+      const col = TIPO_COLORS[v.tipo]||'#7a8099';
+      return `<div class="mob-card">
+        <div class="mob-card-top"><span class="osnum">${v.placa}</span><span style="background:${col}22;color:${col};font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px">${TIPO_LABELS[v.tipo]||v.tipo}</span></div>
+        <div style="font-weight:600;font-size:15px;color:var(--tx);margin-bottom:4px">${v.marca} ${v.modelo} ${v.ano||''} · ${v.cor||''}</div>
+        <div class="mob-card-row"><span style="color:var(--tx2);font-size:13px">${v.clienteNome||'—'}</span>
+          <div class="ib" onclick="window.location.href='veiculos.html?action=edit&id=${v.id}'"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></div></div>
+      </div>`;
+    }).join('');
+    document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="chd"><div class="ctitle">Veículos (${veiculos.length})</div></div>
+      <div class="tbl-wrap tbl-desktop"><table class="tbl">
+        <thead><tr><th>Placa</th><th>Marca/Modelo</th><th>Ano</th><th>Cor</th><th>Tipo</th><th>Proprietário</th><th>OS</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div class="mob-list cbd">${mob}</div>
+    </div>`;
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div style="padding:20px;color:var(--rd)">Erro: ${e.message}</div>`;
+  }
+}
+
+async function renderForm(editId, preCliId) {
+  document.getElementById('ptitle').textContent = editId ? 'Editar Veículo' : 'Novo Veículo';
+  document.getElementById('top-act').innerHTML = `<button class="btn btn-g sm" onclick="window.location.href='veiculos.html'">← Voltar</button>`;
+  let v = null; let clientes = [];
+  try {
+    clientes = await clientesAPI.listar();
+    if (editId) v = await veiculosAPI.buscar(editId);
+  } catch {}
+  const cliOptions = clientes.map(c => `<option value="${c.id}" ${(v?.clienteId==c.id||preCliId==c.id)?'selected':''}>${c.nome} — ${c.cpf}</option>`).join('');
+  const TIPOS = ['SEDAN','HATCH','SUV','PICKUP','ELETRICO'];
+  const tipoOpts = TIPOS.map(t=>`<option value="${t}" ${v?.tipo===t?'selected':''}>${TIPO_LABELS[t]||t}</option>`).join('');
+  if (v?.marca) selectedMarca = v.marca;
+  document.getElementById('content').innerHTML = `
+  <div class="card">
+    <div class="chd"><div class="ctitle">${editId?'Editar':'Novo'} Veículo</div></div>
+    <div class="cbd">
+      <div class="fgrid">
+        <div class="fg full"><label>Proprietário *</label>
+          <select class="finp" id="v-cli"><option value="">Selecione...</option>${cliOptions}</select></div>
+        <div class="fg"><label>Marca *</label>
+          <div style="position:relative">
+            <input class="finp" type="text" id="v-marca" value="${v?.marca||''}" placeholder="Ex: Honda" autocomplete="off"
+              oninput="onMarcaInput(this.value)" onblur="setTimeout(()=>hideDrop('marca-list'),200)">
+            <div class="autocomplete-list" id="marca-list"></div>
+          </div></div>
+        <div class="fg"><label>Modelo *</label>
+          <div style="position:relative">
+            <input class="finp" type="text" id="v-modelo" value="${v?.modelo||''}" placeholder="Ex: Civic" autocomplete="off"
+              oninput="onModeloInput(this.value)" onblur="setTimeout(()=>hideDrop('modelo-list'),200)">
+            <div class="autocomplete-list" id="modelo-list"></div>
+          </div></div>
+        <div class="fg"><label>Ano</label><input class="finp" type="text" id="v-ano" value="${v?.ano||''}" placeholder="2022" maxlength="4"></div>
+        <div class="fg"><label>Cor</label><input class="finp" type="text" id="v-cor" value="${v?.cor||''}" placeholder="Prata"></div>
+        <div class="fg"><label>Placa *</label><input class="finp" type="text" id="v-placa" value="${v?.placa||''}" placeholder="ABC-1234" maxlength="8" oninput="maskPlate(this)" style="text-transform:uppercase"></div>
+        <div class="fg"><label>Tipo</label><select class="finp" id="v-tipo">${tipoOpts}</select></div>
+        <div class="fg"><label>Km</label><input class="finp" type="number" id="v-km" value="${v?.quilometragem||''}" placeholder="45000"></div>
+        <div class="fg full"><label>Observações</label><input class="finp" type="text" id="v-obs" value="${v?.observacoes||''}" placeholder="Observações sobre o veículo"></div>
+      </div>
+      <div id="f-err" style="display:none;background:var(--rdd);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--rd);margin-bottom:12px"></div>
+      <div class="factions">
+        <button class="btn btn-g" onclick="window.location.href='veiculos.html'">Cancelar</button>
+        ${editId?`<button class="btn btn-d" onclick="delVeiculo(${editId})">Excluir</button>`:''}
+        <button class="btn btn-p" id="btn-save" onclick="saveVeiculo(${editId||0})">${editId?'Salvar':'Cadastrar'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function onMarcaInput(val) {
+  const list = document.getElementById('marca-list'); if (!list) return;
+  if (!val) { hideDrop('marca-list'); return; }
+  const matches = Object.keys(MARCAS_MODELOS).filter(m=>m.toLowerCase().startsWith(val.toLowerCase())).slice(0,8);
+  if (!matches.length) { hideDrop('marca-list'); return; }
+  list.innerHTML = matches.map(m=>`<div class="ac-item" onmousedown="selectMarca('${m}')">${m}</div>`).join('');
+  showDrop('marca-list');
+}
+function selectMarca(m) {
+  selectedMarca = m;
+  document.getElementById('v-marca').value = m;
+  document.getElementById('v-modelo').value = '';
+  hideDrop('marca-list');
+  hideDrop('modelo-list');
+}
+function onModeloInput(val) {
+  const list = document.getElementById('modelo-list'); if (!list) return;
+  const marca = document.getElementById('v-marca').value || selectedMarca;
+  const modelos = MARCAS_MODELOS[marca]||[];
+  if (!val) { hideDrop('modelo-list'); return; }
+  const matches = modelos.filter(m=>m.toLowerCase().includes(val.toLowerCase())).slice(0,8);
+  if (!matches.length) { hideDrop('modelo-list'); return; }
+  list.innerHTML = matches.map(m=>`<div class="ac-item" onmousedown="selectModelo('${m}')">${m}</div>`).join('');
+  showDrop('modelo-list');
+}
+function selectModelo(m) { document.getElementById('v-modelo').value=m; hideDrop('modelo-list'); }
+
+async function saveVeiculo(editId) {
+  const btn = document.getElementById('btn-save');
+  const dados = {
+    clienteId: parseInt(document.getElementById('v-cli').value)||null,
+    marca: document.getElementById('v-marca').value.trim(),
+    modelo: document.getElementById('v-modelo').value.trim(),
+    ano: document.getElementById('v-ano').value.trim(),
+    cor: document.getElementById('v-cor').value.trim(),
+    placa: document.getElementById('v-placa').value.trim().toUpperCase(),
+    tipo: document.getElementById('v-tipo').value,
+    quilometragem: parseInt(document.getElementById('v-km').value)||null,
+    observacoes: document.getElementById('v-obs').value.trim(),
+  };
+  if (!dados.clienteId) return showError('Selecione o proprietário');
+  if (!dados.marca)     return showError('Informe a marca');
+  if (!dados.modelo)    return showError('Informe o modelo');
+  if (!dados.placa)     return showError('Informe a placa');
+  btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    if (editId) await veiculosAPI.atualizar(editId, dados);
+    else        await veiculosAPI.criar(dados);
+    window.location.href = 'veiculos.html';
+  } catch(e) { showError(e.message); btn.disabled=false; btn.textContent=editId?'Salvar':'Cadastrar'; }
+}
+async function delVeiculo(id) {
+  if (!confirm('Excluir este veículo?')) return;
+  try { await veiculosAPI.deletar(id); window.location.href='veiculos.html'; }
+  catch(e) { alert('Erro: '+e.message); }
+}
+main();
+</script>
+</body>
+</html>

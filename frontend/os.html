@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>MECANIX — Ordens de Serviço</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="email-toast" id="email-toast">
+  <div class="toast-hd">
+    <div class="toast-ico"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+    <div class="toast-title">E-mail enviado ao cliente</div>
+    <div class="toast-close" onclick="closeToast()">×</div>
+  </div>
+  <div class="toast-body" id="toast-body"></div>
+</div>
+<div class="sb-overlay" id="sb-overlay" onclick="closeSB()"></div>
+<div class="app">
+  <div class="sb" id="sb"></div>
+  <div class="mn">
+    <div class="topbar">
+      <div class="menu-btn" onclick="toggleSB()"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></div>
+      <div class="ptitle" id="ptitle"></div>
+      <div class="pdate" id="pdate"></div>
+      <div id="top-act"></div>
+    </div>
+    <div class="ct" id="content"><div style="padding:40px;text-align:center;color:var(--tx3)">Carregando...</div></div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/sidebar.js"></script>
+<script>
+let formSvcs = [], formPecas = [], estoqueCache = [], clientesCache = [];
+
+async function main() {
+  const user = await initPage('os', 'Ordens de Serviço');
+  if (!user) return;
+  document.getElementById('top-act').innerHTML =
+    `<button class="btn btn-p sm" onclick="window.location.href='os.html?action=new'">+ Nova OS</button>`;
+  const action  = getParam('action');
+  const idParam = getParam('id') ? parseInt(getParam('id')) : null;
+  const filter  = getParam('filter') || '';
+  if (action === 'new')              { formSvcs=[]; formPecas=[]; await renderForm(null); }
+  else if (action === 'edit' && idParam) { formSvcs=[]; formPecas=[]; await renderForm(idParam); }
+  else if (action === 'print' && idParam) await renderPrint(idParam);
+  else                               await renderList(filter);
+}
+
+// ── LISTA ──
+async function renderList(filter) {
+  try {
+    const ordens = await ordensAPI.listar();
+    const filtradas = filter ? ordens.filter(o=>o.status===filter) : ordens;
+    const STATUS_LIST = ['','ANDAMENTO','AGUARDANDO','AGENDADO','CONCLUIDO','CANCELADO'];
+    const STATUS_LABELS = {ANDAMENTO:'Em andamento',AGUARDANDO:'Aguardando',AGENDADO:'Agendado',CONCLUIDO:'Concluído',CANCELADO:'Cancelado'};
+    const filterBtns = STATUS_LIST.map(s => {
+      const lbl = s ? STATUS_LABELS[s]||s : 'Todas';
+      const cnt = s ? ordens.filter(o=>o.status===s).length : ordens.length;
+      return `<button class="btn ${filter===s?'btn-p':'btn-g'} sm" onclick="window.location.href='os.html${s?'?filter='+s:''}'">
+        ${lbl} <span style="opacity:.7">(${cnt})</span></button>`;
+    }).join('');
+    const rows = filtradas.length ? filtradas.map(o => `<tr style="cursor:pointer" onclick="window.location.href='os.html?action=print&id=${o.id}'">
+      <td class="osnum">${osNum(o.id)}</td>
+      <td style="font-weight:500">${o.clienteNome||'—'}</td>
+      <td style="color:var(--tx2)">${o.veiculoDesc||'—'}</td>
+      <td style="color:var(--tx2)">${o.veiculoPlaca||'—'}</td>
+      <td style="color:var(--tx2)">${o.mecanico||'—'}</td>
+      <td>${sBadge(o.status)}</td>
+      <td style="font-weight:700;color:var(--or);text-align:right">${fmtCur(o.total)}</td>
+      <td>${fmtDate(o.data)}</td>
+    </tr>`).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:24px">Nenhuma OS encontrada.</td></tr>`;
+    const mob = filtradas.map(o => `<div class="mob-card" onclick="window.location.href='os.html?action=print&id=${o.id}'">
+      <div class="mob-card-top"><span class="osnum">${osNum(o.id)}</span>${sBadge(o.status)}</div>
+      <div style="font-weight:600;font-size:15px;color:var(--tx)">${o.clienteNome||'—'}</div>
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:6px">${o.veiculoDesc||'—'} · ${o.veiculoPlaca||'—'}</div>
+      <div style="font-weight:700;color:var(--or)">${fmtCur(o.total)}</div>
+    </div>`).join('');
+    document.getElementById('content').innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">${filterBtns}</div>
+    <div class="card">
+      <div class="chd"><div class="ctitle">Ordens de Serviço (${filtradas.length})</div></div>
+      <div class="tbl-wrap tbl-desktop"><table class="tbl">
+        <thead><tr><th>OS</th><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Mecânico</th><th>Status</th><th style="text-align:right">Total</th><th>Data</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <div class="mob-list cbd">${mob}</div>
+    </div>`;
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div style="padding:20px;color:var(--rd)">Erro: ${e.message}</div>`;
+  }
+}
+
+// ── FORMULÁRIO ──
+async function renderForm(editId) {
+  document.getElementById('ptitle').textContent = editId ? 'Editar OS' : 'Nova OS';
+  document.getElementById('top-act').innerHTML = `<button class="btn btn-g sm" onclick="window.location.href='os.html'">← Voltar</button>`;
+  let os = null;
+  try {
+    [clientesCache, estoqueCache] = await Promise.all([clientesAPI.listar(), estoqueAPI.listar()]);
+    if (editId) {
+      os = await ordensAPI.buscar(editId);
+      formSvcs = (os.servicos||[]).map(s=>({d:s.descricao,v:s.valor}));
+      formPecas = (os.pecas||[]).map(p=>({id:p.estoqueId,nome:p.nomePeca,qtd:p.quantidade,preco:p.precoUnitario}));
+    }
+  } catch {}
+  const cliOpts = clientesCache.map(c=>`<option value="${c.id}" ${os?.clienteId==c.id?'selected':''}>${c.nome}</option>`).join('');
+  const STATUS = ['ANDAMENTO','AGUARDANDO','AGENDADO','CONCLUIDO','CANCELADO'];
+  const STATUS_LABELS = {ANDAMENTO:'Em andamento',AGUARDANDO:'Aguardando peça',AGENDADO:'Agendado',CONCLUIDO:'Concluído',CANCELADO:'Cancelado'};
+  const statOpts = STATUS.map(s=>`<option value="${s}" ${os?.status===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('');
+  document.getElementById('content').innerHTML = `
+  <div class="card" style="margin-bottom:16px">
+    <div class="chd"><div class="ctitle">Dados da OS</div></div>
+    <div class="cbd">
+      <div class="fgrid">
+        <div class="fg full"><label>Cliente *</label>
+          <select class="finp" id="os-cli" onchange="loadVeiculos()">${cliOpts.length?'<option value="">Selecione...</option>'+cliOpts:'<option value="">Nenhum cliente cadastrado</option>'}</select></div>
+        <div class="fg full"><label>Veículo *</label>
+          <select class="finp" id="os-vei"><option value="">Selecione o cliente primeiro...</option></select></div>
+        <div class="fg"><label>Status</label><select class="finp" id="os-st">${statOpts}</select></div>
+        <div class="fg"><label>Mecânico</label><input class="finp" type="text" id="os-mec" value="${os?.mecanico||''}" placeholder="Nome do mecânico"></div>
+        <div class="fg"><label>Data</label><input class="finp" type="date" id="os-dt" value="${os?.data||new Date().toISOString().split('T')[0]}"></div>
+        <div class="fg full"><label>Observações</label><input class="finp" type="text" id="os-obs" value="${os?.observacoes||''}" placeholder="Observações gerais"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="chd"><div class="ctitle">Serviços</div>
+      <button class="btn btn-g sm" onclick="addSvc()">+ Adicionar serviço</button>
+    </div>
+    <div id="svcs-wrap" class="cbd"></div>
+    <div id="svcs-total" style="padding:0 20px 16px;text-align:right;font-size:13px;color:var(--tx2)"></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="chd"><div class="ctitle">Peças</div>
+      <button class="btn btn-g sm" onclick="addPeca()">+ Adicionar peça</button>
+    </div>
+    <div id="pecas-wrap" class="cbd"></div>
+    <div id="pecas-total" style="padding:0 20px 16px;text-align:right;font-size:13px;color:var(--tx2)"></div>
+  </div>
+  <div class="card">
+    <div class="cbd">
+      <div id="f-err" style="display:none;background:var(--rdd);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--rd);margin-bottom:12px"></div>
+      <div class="factions">
+        <button class="btn btn-g" onclick="window.location.href='os.html'">Cancelar</button>
+        ${editId?`<button class="btn btn-d" onclick="delOS(${editId})">Excluir</button>`:''}
+        <button class="btn btn-p" id="btn-save" onclick="saveOS(${editId||0})">${editId?'Salvar':'Criar OS'}</button>
+      </div>
+    </div>
+  </div>`;
+  // Carrega veículos do cliente selecionado
+  if (os?.clienteId) await loadVeiculos(os.veiculoId);
+  else if (clientesCache.length) await loadVeiculos();
+  renderSvcs(); renderPecas();
+}
+
+async function loadVeiculos(preSelectId) {
+  const sel = document.getElementById('os-cli'); if (!sel) return;
+  const cliId = parseInt(sel.value);
+  const veiSel = document.getElementById('os-vei'); if (!veiSel) return;
+  if (!cliId) { veiSel.innerHTML='<option value="">Selecione o cliente primeiro...</option>'; return; }
+  try {
+    const veiculos = await veiculosAPI.listarPorCliente(cliId);
+    veiSel.innerHTML = veiculos.length
+      ? veiculos.map(v=>`<option value="${v.id}" ${(preSelectId&&v.id==preSelectId)?'selected':''}>${v.placa} — ${v.marca} ${v.modelo} ${v.ano||''}</option>`).join('')
+      : '<option value="">Nenhum veículo cadastrado</option>';
+  } catch { veiSel.innerHTML='<option value="">Erro ao carregar</option>'; }
+}
+
+function renderSvcs() {
+  const wrap = document.getElementById('svcs-wrap'); if (!wrap) return;
+  if (!formSvcs.length) { wrap.innerHTML='<div style="padding:12px 16px;font-size:13px;color:var(--tx3)">Nenhum serviço adicionado.</div>'; updateTotals(); return; }
+  wrap.innerHTML = formSvcs.map((s,i)=>`<div style="display:flex;gap:10px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--br)">
+    <input class="finp" type="text" value="${s.d||''}" placeholder="Descrição do serviço" style="flex:2" onchange="formSvcs[${i}].d=this.value">
+    <input class="finp" type="number" value="${s.v||''}" placeholder="Valor R$" style="width:120px;flex-shrink:0" step="0.01" onchange="formSvcs[${i}].v=parseFloat(this.value)||0;updateTotals()">
+    <button class="btn btn-d sm" onclick="formSvcs.splice(${i},1);renderSvcs()">×</button>
+  </div>`).join('');
+  updateTotals();
+}
+function addSvc() { formSvcs.push({d:'',v:0}); renderSvcs(); }
+
+function renderPecas() {
+  const wrap = document.getElementById('pecas-wrap'); if (!wrap) return;
+  if (!formPecas.length) { wrap.innerHTML='<div style="padding:12px 16px;font-size:13px;color:var(--tx3)">Nenhuma peça adicionada.</div>'; updateTotals(); return; }
+  const estOpts = estoqueCache.map(e=>`<option value="${e.id}">${e.nome} (est: ${e.quantidade})</option>`).join('');
+  wrap.innerHTML = formPecas.map((p,i)=>`<div style="display:flex;gap:10px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--br);flex-wrap:wrap">
+    <select class="finp" style="flex:2;min-width:160px" onchange="selectPeca(${i},this.value)">
+      <option value="">Selecione...</option>${estOpts.replace(`value="${p.id}"`,`value="${p.id}" selected`)}
+    </select>
+    <input class="finp" type="number" value="${p.qtd||1}" placeholder="Qtd" style="width:70px;flex-shrink:0" min="1" onchange="formPecas[${i}].qtd=parseInt(this.value)||1;updateTotals()">
+    <input class="finp" type="number" value="${p.preco||''}" placeholder="R$ unit." style="width:110px;flex-shrink:0" step="0.01" onchange="formPecas[${i}].preco=parseFloat(this.value)||0;updateTotals()">
+    <button class="btn btn-d sm" onclick="formPecas.splice(${i},1);renderPecas()">×</button>
+  </div>`).join('');
+  updateTotals();
+}
+function addPeca() { formPecas.push({id:null,nome:'',qtd:1,preco:0}); renderPecas(); }
+function selectPeca(i, estoqueId) {
+  const item = estoqueCache.find(e=>e.id==estoqueId);
+  if (item) { formPecas[i].id=item.id; formPecas[i].nome=item.nome; formPecas[i].preco=item.precoUnitario; renderPecas(); }
+}
+
+function updateTotals() {
+  const ts = formSvcs.reduce((a,s)=>a+(parseFloat(s.v)||0),0);
+  const tp = formPecas.reduce((a,p)=>a+(parseFloat(p.preco)||0)*(parseInt(p.qtd)||1),0);
+  const sEl = document.getElementById('svcs-total'); if(sEl) sEl.textContent = `Total serviços: ${fmtCur(ts)}`;
+  const pEl = document.getElementById('pecas-total'); if(pEl) pEl.textContent = `Total peças: ${fmtCur(tp)}`;
+}
+
+async function saveOS(editId) {
+  const btn = document.getElementById('btn-save');
+  const dados = {
+    clienteId: parseInt(document.getElementById('os-cli').value)||null,
+    veiculoId: parseInt(document.getElementById('os-vei').value)||null,
+    status: document.getElementById('os-st').value,
+    mecanico: document.getElementById('os-mec').value.trim(),
+    data: document.getElementById('os-dt').value||null,
+    observacoes: document.getElementById('os-obs').value.trim(),
+    servicos: formSvcs.filter(s=>s.d).map(s=>({descricao:s.d,valor:parseFloat(s.v)||0})),
+    pecas: formPecas.filter(p=>p.id).map(p=>({estoqueId:p.id,quantidade:parseInt(p.qtd)||1,precoUnitario:parseFloat(p.preco)||0})),
+  };
+  if (!dados.clienteId) return showError('Selecione o cliente');
+  if (!dados.veiculoId) return showError('Selecione o veículo');
+  btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    const os = editId ? await ordensAPI.atualizar(editId, dados) : await ordensAPI.criar(dados);
+    window.location.href = `os.html?action=print&id=${os.id}`;
+  } catch(e) { showError(e.message); btn.disabled=false; btn.textContent=editId?'Salvar':'Criar OS'; }
+}
+
+async function delOS(id) {
+  if (!confirm('Excluir esta OS?')) return;
+  try { await ordensAPI.deletar(id); window.location.href='os.html'; }
+  catch(e) { alert('Erro: '+e.message); }
+}
+
+// ── IMPRESSÃO ──
+async function renderPrint(id) {
+  document.getElementById('top-act').innerHTML = `
+    <button class="btn btn-g sm" onclick="window.location.href='os.html'">← Voltar</button>
+    <button class="btn btn-p sm" onclick="window.print()">🖨️ Imprimir</button>`;
+  document.getElementById('ptitle').textContent = 'Detalhes da OS';
+  try {
+    const os = await ordensAPI.buscar(id);
+    const STATUS_LABELS = {ANDAMENTO:'Em andamento',AGUARDANDO:'Aguardando peça',AGENDADO:'Agendado',CONCLUIDO:'Concluído',CANCELADO:'Cancelado'};
+    const svcsHtml = (os.servicos||[]).length ? os.servicos.map(s=>`<tr>
+      <td>${s.descricao}</td><td style="text-align:right;color:var(--or);font-weight:600">${fmtCur(s.valor)}</td>
+    </tr>`).join('') : `<tr><td colspan="2" style="color:var(--tx3)">Nenhum serviço.</td></tr>`;
+    const pecasHtml = (os.pecas||[]).length ? os.pecas.map(p=>`<tr>
+      <td>${p.nomePeca}</td><td style="text-align:center;color:var(--tx2)">${p.quantidade}</td>
+      <td style="text-align:right;color:var(--tx2)">${fmtCur(p.precoUnitario)}</td>
+      <td style="text-align:right;color:var(--or);font-weight:600">${fmtCur(p.subtotal)}</td>
+    </tr>`).join('') : `<tr><td colspan="4" style="color:var(--tx3)">Nenhuma peça.</td></tr>`;
+    document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;padding:20px 20px 16px">
+        <div>
+          <div style="font-size:22px;font-weight:700;color:var(--or)">${osNum(os.id)}</div>
+          <div style="font-size:13px;color:var(--tx2);margin-top:4px">Emitida em ${fmtDate(os.data)}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${sBadge(os.status)}
+          <button class="btn btn-g sm" onclick="window.location.href='os.html?action=edit&id=${os.id}'">✏️ Editar</button>
+          ${os.status !== 'CONCLUIDO' ? `<button class="btn sm" style="background:var(--gn);color:#fff;border:none" onclick="mudarStatus(${os.id},'CONCLUIDO')">✅ Concluir</button>` : ''}
+          ${os.status === 'ANDAMENTO' ? `<button class="btn sm" style="background:var(--bl);color:#fff;border:none" onclick="mudarStatus(${os.id},'AGUARDANDO')">⏸ Aguardar peça</button>` : ''}
+          ${os.status === 'AGUARDANDO' ? `<button class="btn sm" style="background:var(--yw);color:#000;border:none" onclick="mudarStatus(${os.id},'ANDAMENTO')">▶ Retomar</button>` : ''}
+          ${os.status !== 'CANCELADO' && os.status !== 'CONCLUIDO' ? `<button class="btn sm" style="background:var(--rd);color:#fff;border:none" onclick="mudarStatus(${os.id},'CANCELADO')">✖ Cancelar</button>` : ''}
+          ${os.status === 'CONCLUIDO' ? `<button class="btn sm" style="background:var(--yw);color:#000;border:none" onclick="mudarStatus(${os.id},'ANDAMENTO')">↩ Reabrir</button>` : ''}
+          ${os.clienteEmail ? `<button class="btn btn-g sm" id="btn-email" onclick="enviarEmail(${os.id},'${os.clienteEmail}')">📧 Enviar OS por e-mail</button>` : '<span style="font-size:11px;color:var(--tx3)">Cliente sem e-mail</span>'}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;padding:16px 20px;border-top:1px solid var(--br);border-bottom:1px solid var(--br)">
+        <div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">CLIENTE</div><div style="font-weight:600">${os.clienteNome}</div></div>
+        <div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">VEÍCULO</div><div style="font-weight:600">${os.veiculoDesc}</div><div style="font-size:13px;color:var(--tx2)">${os.veiculoPlaca}</div></div>
+        <div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">MECÂNICO</div><div style="font-weight:600">${os.mecanico||'—'}</div></div>
+        ${os.observacoes?`<div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">OBSERVAÇÕES</div><div style="font-size:13px;color:var(--tx2)">${os.observacoes}</div></div>`:''}
+      </div>
+      <div style="padding:20px">
+        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px">Serviços</div>
+        <table class="tbl" style="margin-bottom:20px"><thead><tr><th>Descrição</th><th style="text-align:right">Valor</th></tr></thead><tbody>${svcsHtml}</tbody>
+          <tfoot><tr style="border-top:1px solid var(--br)"><td style="color:var(--tx2);font-size:12px">Total serviços</td><td style="text-align:right;font-weight:700;color:var(--or)">${fmtCur(os.totalServicos)}</td></tr></tfoot>
+        </table>
+        <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:10px">Peças</div>
+        <table class="tbl"><thead><tr><th>Peça</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unit.</th><th style="text-align:right">Subtotal</th></tr></thead><tbody>${pecasHtml}</tbody>
+          <tfoot><tr style="border-top:1px solid var(--br)"><td colspan="3" style="color:var(--tx2);font-size:12px">Total peças</td><td style="text-align:right;font-weight:700;color:var(--or)">${fmtCur(os.totalPecas)}</td></tr></tfoot>
+        </table>
+        <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--br);display:flex;justify-content:flex-end;align-items:center;gap:12px">
+          <span style="font-size:15px;color:var(--tx2)">Total geral</span>
+          <span style="font-size:22px;font-weight:700;color:var(--or)">${fmtCur(os.total)}</span>
+        </div>
+      </div>
+    </div>`;
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div style="padding:20px;color:var(--rd)">Erro: ${e.message}</div>`;
+  }
+}
+async function enviarEmail(osId, email) {
+  const btn = document.getElementById('btn-email');
+  if (btn) { btn.disabled=true; btn.textContent='Enviando...'; }
+  try {
+    await apiFetch('POST', '/ordens/' + osId + '/enviar-email');
+    const t = document.getElementById('email-toast');
+    const b = document.getElementById('toast-body');
+    if (t && b) { b.innerHTML = 'OS enviada com sucesso para <strong>' + email + '</strong>'; t.classList.add('show'); setTimeout(closeToast, 6000); }
+    if (btn) { btn.textContent='✅ E-mail enviado!'; setTimeout(()=>{ btn.disabled=false; btn.textContent='📧 Enviar OS por e-mail'; },3000); }
+  } catch(e) {
+    alert('Erro ao enviar e-mail: ' + e.message + '\n\nVerifique se o Gmail e a senha de app estão configurados em application.properties');
+    if (btn) { btn.disabled=false; btn.textContent='📧 Enviar OS por e-mail'; }
+  }
+}
+async function mudarStatus(osId, novoStatus) {
+  const STATUS_LABELS = {ANDAMENTO:'Em andamento',AGUARDANDO:'Aguardando peça',AGENDADO:'Agendado',CONCLUIDO:'Concluído',CANCELADO:'Cancelado'};
+  if (!confirm(`Alterar status para "${STATUS_LABELS[novoStatus]}"?`)) return;
+  try {
+    // Busca OS completa para não perder dados
+    const os = await ordensAPI.buscar(osId);
+    await ordensAPI.atualizar(osId, {
+      clienteId:   os.clienteId,
+      veiculoId:   os.veiculoId,
+      status:      novoStatus,
+      mecanico:    os.mecanico,
+      data:        os.data,
+      observacoes: os.observacoes,
+      servicos:    (os.servicos||[]).map(s=>({descricao:s.descricao, valor:s.valor})),
+      pecas:       (os.pecas||[]).map(p=>({estoqueId:p.estoqueId, quantidade:p.quantidade, precoUnitario:p.precoUnitario})),
+    });
+    // Recarrega a tela de detalhes
+    await renderPrint(osId);
+  } catch(e) {
+    alert('Erro ao alterar status: ' + e.message);
+  }
+}
+
+main();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>MECANIX — Clientes</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="sb-overlay" id="sb-overlay" onclick="closeSB()"></div>
+<div class="app">
+  <div class="sb" id="sb"></div>
+  <div class="mn">
+    <div class="topbar">
+      <div class="menu-btn" onclick="toggleSB()"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></div>
+      <div class="ptitle" id="ptitle"></div>
+      <div class="pdate" id="pdate"></div>
+      <div id="top-act"></div>
+    </div>
+    <div class="ct" id="content"><div style="padding:40px;text-align:center;color:var(--tx3)">Carregando...</div></div>
+  </div>
+</div>
+<script src="js/api.js"></script>
+<script src="js/marcas.js"></script>
+<script src="js/sidebar.js"></script>
+<script>
+async function main() {
+  const user = await initPage('clientes','Clientes');
+  if (!user) return;
+  const action = getParam('action');
+  const id = getParam('id') ? parseInt(getParam('id')) : null;
+  document.getElementById('top-act').innerHTML =
+    '<button class="btn btn-p sm" onclick="window.location.href=\'clientes.html?action=new\'">+ Novo cliente</button>';
+  if (action==='new') await renderForm(null);
+  else if (action==='edit'&&id) await renderForm(id);
+  else await renderList();
+}
+
+async function renderList() {
+  const clientes = await clientesAPI.listar();
+  document.getElementById('content').innerHTML = '<div class="card"><div class="chd"><div class="ctitle">Clientes ('+clientes.length+')</div></div><div class="tbl-wrap tbl-desktop"><table class="tbl"><thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Veículos</th><th>OS</th><th></th></tr></thead><tbody>'+
+    clientes.map(c=>'<tr><td style="font-weight:500">'+c.nome+'</td><td style="color:var(--tx2)">'+c.cpf+'</td><td style="color:var(--tx2)">'+(c.telefone||'—')+'</td><td><span class="badge bbl">'+c.totalVeiculos+' veíc.</span></td><td><span class="badge bgy">'+c.totalOrdens+' OS</span></td><td><div class="ib" onclick="window.location.href=\'clientes.html?action=edit&id='+c.id+'\'"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></div></td></tr>').join('') +
+    '</tbody></table></div><div class="mob-list cbd">'+
+    clientes.map(c=>'<div class="mob-card"><div class="mob-card-top"><span style="font-weight:600;font-size:15px">'+c.nome+'</span><div class="ib" onclick="window.location.href=\'clientes.html?action=edit&id='+c.id+'\'"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></div></div><div class="mob-card-sub">'+c.cpf+' · '+(c.telefone||'—')+'</div></div>').join('')+
+    '</div></div>';
+}
+
+async function renderForm(editId) {
+  document.getElementById('ptitle').textContent = editId ? 'Editar Cliente' : 'Novo Cliente';
+  document.getElementById('top-act').innerHTML = '<button class="btn btn-g sm" onclick="window.location.href=\'clientes.html\'">← Voltar</button>';
+  let c = null;
+  if (editId) { try { c = await clientesAPI.buscar(editId); } catch {} }
+  document.getElementById('content').innerHTML = '<div class="card"><div class="chd"><div class="ctitle">'+(editId?'Editar':'Novo')+' Cliente</div></div><div class="cbd"><div class="fgrid"><div class="fg full"><label>Nome completo *</label><input class="finp" type="text" id="c-nm" value="'+(c?.nome||'')+'" placeholder="Ex: Maria da Silva"></div><div class="fg"><label>CPF *</label><input class="finp" type="text" id="c-cpf" value="'+(c?.cpf||'')+'" placeholder="000.000.000-00" maxlength="14"></div><div class="fg"><label>Telefone</label><input class="finp" type="tel" id="c-tel" value="'+(c?.telefone||'')+'" placeholder="(41) 99999-0000" maxlength="15" oninput="maskPhone(this)"></div><div class="fg full"><label>E-mail</label><input class="finp" type="email" id="c-em" value="'+(c?.email||'')+'" placeholder="email@exemplo.com"></div><div class="fg full"><label>Endereço</label><input class="finp" type="text" id="c-end" value="'+(c?.endereco||'')+'" placeholder="Rua, número, bairro, cidade - UF"></div></div><div id="f-err" style="display:none;background:var(--rdd);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--rd);margin-bottom:12px"></div><div class="factions"><button class="btn btn-g" onclick="window.location.href=\'clientes.html\'">Cancelar</button><button class="btn btn-p" id="btn-save" onclick="saveCliente('+(editId||0)+')">'+(editId?'Salvar':'Cadastrar')+'</button></div></div></div>';
+}
+
+async function saveCliente(editId) {
+  const btn = document.getElementById('btn-save');
+  const dados = { nome: document.getElementById('c-nm').value.trim(), cpf: document.getElementById('c-cpf').value.trim(), telefone: document.getElementById('c-tel').value.trim(), email: document.getElementById('c-em').value.trim(), endereco: document.getElementById('c-end').value.trim() };
+  if (!dados.nome || !dados.cpf) { showError('Nome e CPF são obrigatórios'); return; }
+  btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    if (editId) await clientesAPI.atualizar(editId, dados);
+    else await clientesAPI.criar(dados);
+    window.location.href = 'clientes.html';
+  } catch(e) { showError(e.message); btn.disabled=false; btn.textContent=editId?'Salvar':'Cadastrar'; }
+}
+main();
+</script>
+</body>
+</html>
