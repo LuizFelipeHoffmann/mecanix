@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:8080/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"admin@mecanix.com\",\"senha\":\"admin123\"}' -c /tmp/cf.txt)",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"naoemail\",\"senha\":\"x\"}')",
+      "Bash(curl -s -b /tmp/cf.txt http://localhost:8080/api/auth/me)",
+      "Bash(curl -s -b /tmp/cf.txt -X POST http://localhost:8080/api/clientes -H \"Content-Type: application/json\" -d '{\"nome\":\"Carlos\",\"cpf\":\"abc\"}')",
+      "Bash(curl -s -b /tmp/cf.txt -X POST http://localhost:8080/api/estoque -H \"Content-Type: application/json\" -d '{\"nome\":\"Filtro\",\"quantidade\":5}')"
+    ]
+  }
+}
