@@ -14,10 +14,22 @@ function OSList() {
   const filter = searchParams.get('filter') || ''
   const [ordens, setOrdens] = useState<OrdemServico[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => { ordensAPI.listar().then(setOrdens).finally(() => setLoading(false)) }, [])
 
-  const filtradas = filter ? ordens.filter(o => o.status === filter) : ordens
+  const porStatus = filter ? ordens.filter(o => o.status === filter) : ordens
+  const q = search.toLowerCase().trim()
+  const filtradas = q
+    ? porStatus.filter(o =>
+        osNum(o.id).toLowerCase().includes(q) ||
+        (o.clienteNome || '').toLowerCase().includes(q) ||
+        (o.veiculoDesc || '').toLowerCase().includes(q) ||
+        (o.veiculoPlaca || '').toLowerCase().includes(q) ||
+        (o.mecanico || '').toLowerCase().includes(q) ||
+        (STATUS_LABELS[o.status] || o.status).toLowerCase().includes(q)
+      )
+    : porStatus
   const STATUS_LIST = ['', 'ANDAMENTO', 'AGUARDANDO', 'AGENDADO', 'CONCLUIDO', 'CANCELADO']
 
   const actions = <button className="btn btn-p sm" onClick={() => navigate('/os/new')}>+ Nova OS</button>
@@ -39,7 +51,16 @@ function OSList() {
         })}
       </div>
       <div className="card">
-        <div className="chd"><div className="ctitle">Ordens de Serviço ({filtradas.length})</div></div>
+        <div className="chd">
+          <div className="ctitle">Ordens de Serviço ({filtradas.length}{q ? ` de ${porStatus.length}` : ''})</div>
+          <input
+            type="search"
+            placeholder="Buscar por OS, cliente, veículo, placa, mecânico..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+          />
+        </div>
         <div className="tbl-wrap tbl-desktop">
           <table className="tbl">
             <thead><tr><th>OS</th><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Mecânico</th><th>Status</th><th style={{ textAlign: 'right' }}>Total</th><th>Data</th></tr></thead>

@@ -10,12 +10,23 @@ function EstoqueList() {
   const navigate = useNavigate()
   const [itens, setItens] = useState<EstoqueItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     estoqueAPI.listar().then(setItens).finally(() => setLoading(false))
   }, [])
 
   const alertaCount = itens.filter(e => e.alertaEstoque).length
+  const q = search.toLowerCase().trim()
+  const filtrados = q
+    ? itens.filter(e =>
+        e.codigo.toLowerCase().includes(q) ||
+        e.nome.toLowerCase().includes(q) ||
+        (e.categoria || '').toLowerCase().includes(q) ||
+        (e.tipos || []).some(t => (TIPO_LABELS[t] || t).toLowerCase().includes(q))
+      )
+    : itens
+
   const actions = <button className="btn btn-p sm" onClick={() => navigate('/estoque/new')}>+ Novo item</button>
 
   if (loading) return <Layout title="Estoque" pageId="estoque" actions={actions}><div style={{ padding: 40, textAlign: 'center', color: 'var(--tx3)' }}>Carregando...</div></Layout>
@@ -28,12 +39,21 @@ function EstoqueList() {
         </div>
       )}
       <div className="card">
-        <div className="chd"><div className="ctitle">Estoque ({itens.length} itens)</div></div>
+        <div className="chd">
+          <div className="ctitle">Estoque ({filtrados.length}{q ? ` de ${itens.length}` : ''} itens)</div>
+          <input
+            type="search"
+            placeholder="Buscar por código, nome, categoria..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+          />
+        </div>
         <div className="tbl-wrap tbl-desktop">
           <table className="tbl">
             <thead><tr><th>Código</th><th>Nome</th><th>Categoria</th><th>Quantidade</th><th>Preço Unit.</th><th>Compatível</th><th /></tr></thead>
             <tbody>
-              {itens.length ? itens.map(e => (
+              {filtrados.length ? filtrados.map(e => (
                 <tr key={e.id}>
                   <td className="osnum">{e.codigo}</td>
                   <td style={{ fontWeight: 500 }}>{e.nome}</td>
@@ -51,12 +71,12 @@ function EstoqueList() {
                     </div>
                   </td>
                 </tr>
-              )) : <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>Nenhum item no estoque.</td></tr>}
+              )) : <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>{q ? 'Nenhum item encontrado.' : 'Nenhum item no estoque.'}</td></tr>}
             </tbody>
           </table>
         </div>
         <div className="mob-list cbd">
-          {itens.map(e => (
+          {filtrados.map(e => (
             <div key={e.id} className="mob-card">
               <div className="mob-card-top">
                 <span className="osnum">{e.codigo}</span>

@@ -8,10 +8,24 @@ function VeiculoList() {
   const navigate = useNavigate()
   const [veiculos, setVeiculos] = useState<Veiculo[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     veiculosAPI.listar().then(setVeiculos).finally(() => setLoading(false))
   }, [])
+
+  const q = search.toLowerCase().trim()
+  const filtrados = q
+    ? veiculos.filter(v =>
+        v.placa.toLowerCase().includes(q) ||
+        v.marca.toLowerCase().includes(q) ||
+        v.modelo.toLowerCase().includes(q) ||
+        (v.cor || '').toLowerCase().includes(q) ||
+        (v.clienteNome || '').toLowerCase().includes(q) ||
+        (TIPO_LABELS[v.tipo] || v.tipo).toLowerCase().includes(q) ||
+        (v.ano || '').includes(q)
+      )
+    : veiculos
 
   const actions = <button className="btn btn-p sm" onClick={() => navigate('/veiculos/new')}>+ Novo veículo</button>
 
@@ -20,12 +34,21 @@ function VeiculoList() {
   return (
     <Layout title="Veículos" pageId="veiculos" actions={actions}>
       <div className="card">
-        <div className="chd"><div className="ctitle">Veículos ({veiculos.length})</div></div>
+        <div className="chd">
+          <div className="ctitle">Veículos ({filtrados.length}{q ? ` de ${veiculos.length}` : ''})</div>
+          <input
+            type="search"
+            placeholder="Buscar por placa, marca, modelo, proprietário..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+          />
+        </div>
         <div className="tbl-wrap tbl-desktop">
           <table className="tbl">
             <thead><tr><th>Placa</th><th>Marca/Modelo</th><th>Ano</th><th>Cor</th><th>Tipo</th><th>Proprietário</th><th>OS</th><th /></tr></thead>
             <tbody>
-              {veiculos.length ? veiculos.map(v => {
+              {filtrados.length ? filtrados.map(v => {
                 const col = TIPO_COLORS[v.tipo] || '#7a8099'
                 return (
                   <tr key={v.id}>
@@ -39,12 +62,12 @@ function VeiculoList() {
                     <td><div className="ib" onClick={() => navigate(`/veiculos/${v.id}/edit`)}><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg></div></td>
                   </tr>
                 )
-              }) : <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>Nenhum veículo cadastrado.</td></tr>}
+              }) : <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>{q ? 'Nenhum veículo encontrado.' : 'Nenhum veículo cadastrado.'}</td></tr>}
             </tbody>
           </table>
         </div>
         <div className="mob-list cbd">
-          {veiculos.map(v => {
+          {filtrados.map(v => {
             const col = TIPO_COLORS[v.tipo] || '#7a8099'
             return (
               <div key={v.id} className="mob-card">

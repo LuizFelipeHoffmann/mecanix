@@ -7,10 +7,21 @@ function ClienteList() {
   const navigate = useNavigate()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     clientesAPI.listar().then(setClientes).finally(() => setLoading(false))
   }, [])
+
+  const q = search.toLowerCase().trim()
+  const filtrados = q
+    ? clientes.filter(c =>
+        c.nome.toLowerCase().includes(q) ||
+        c.cpf.toLowerCase().includes(q) ||
+        (c.telefone || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q)
+      )
+    : clientes
 
   const actions = <button className="btn btn-p sm" onClick={() => navigate('/clientes/new')}>+ Novo cliente</button>
 
@@ -19,12 +30,21 @@ function ClienteList() {
   return (
     <Layout title="Clientes" pageId="clientes" actions={actions}>
       <div className="card">
-        <div className="chd"><div className="ctitle">Clientes ({clientes.length})</div></div>
+        <div className="chd">
+          <div className="ctitle">Clientes ({filtrados.length}{q ? ` de ${clientes.length}` : ''})</div>
+          <input
+            type="search"
+            placeholder="Buscar por nome, CPF, telefone, e-mail..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+          />
+        </div>
         <div className="tbl-wrap tbl-desktop">
           <table className="tbl">
             <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Veículos</th><th>OS</th><th /></tr></thead>
             <tbody>
-              {clientes.map(c => (
+              {filtrados.length ? filtrados.map(c => (
                 <tr key={c.id}>
                   <td style={{ fontWeight: 500 }}>{c.nome}</td>
                   <td style={{ color: 'var(--tx2)' }}>{c.cpf}</td>
@@ -37,12 +57,12 @@ function ClienteList() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>{q ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado.'}</td></tr>}
             </tbody>
           </table>
         </div>
         <div className="mob-list cbd">
-          {clientes.map(c => (
+          {filtrados.map(c => (
             <div key={c.id} className="mob-card">
               <div className="mob-card-top">
                 <span style={{ fontWeight: 600, fontSize: 15 }}>{c.nome}</span>
