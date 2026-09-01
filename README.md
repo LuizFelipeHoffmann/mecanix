@@ -119,14 +119,22 @@ Dados de exemplo (clientes, veículos, peças) vêm de [data.sql](backend/src/ma
 
 ---
 
-## 🔐 Autenticação
+## 🔐 Autenticação e autorização
 
-1. `POST /api/auth/login` valida o hash BCrypt e grava o usuário na `HttpSession` (expira em **8h**).
-2. [SessionInterceptor](backend/src/main/java/com/mecanix/config/SessionInterceptor.java) bloqueia todo `/api/**` sem sessão, retornando `401 {"erro":"Não autenticado"}`.
-   Exceções: `/api/auth/login` e `/api/auth/logout`.
+1. `POST /api/auth/login` valida o hash BCrypt ([AuthService](backend/src/main/java/com/mecanix/service/AuthService.java)) e grava o usuário na `HttpSession` (expira em **8h**).
+2. [SessionInterceptor](backend/src/main/java/com/mecanix/config/SessionInterceptor.java) protege todo `/api/**`, exceto `/api/auth/login` e `/api/auth/logout`:
+   - sem sessão → `401 {"erro":"Não autenticado"}`
+   - sessão válida, mas perfil sem permissão de escrita no módulo → `403`
 3. O frontend envia `credentials: 'include'` em toda requisição e, ao receber `401`, limpa a sessão e redireciona para `/login`.
 
-> O controle por perfil é feito **no menu do frontend** ([Layout.tsx](frontend/src/components/Layout.tsx)). O backend valida sessão, não papel — qualquer usuário autenticado alcança qualquer endpoint.
+**Regra de autorização** — leitura (`GET`) é liberada a qualquer usuário autenticado, porque o Dashboard exibe OS e alertas de estoque para os três perfis. Escrita (`POST`/`PUT`/`DELETE`) é restrita por módulo:
+
+| Módulo | Pode escrever |
+|---|---|
+| `/api/clientes` `/api/veiculos` `/api/ordens` | `ADMIN`, `SERVICOS` |
+| `/api/estoque` | `ADMIN`, `ESTOQUE` |
+
+O menu do frontend ([Layout.tsx](frontend/src/components/Layout.tsx)) esconde as páginas fora do perfil; o backend é quem de fato bloqueia. Coberto por [SessionInterceptorTest](backend/src/test/java/com/mecanix/config/SessionInterceptorTest.java).
 
 ---
 
@@ -152,7 +160,7 @@ Dados de exemplo (clientes, veículos, peças) vêm de [data.sql](backend/src/ma
 | `GET` `POST` | `/api/estoque` | Lista / cria |
 | `GET` `PUT` `DELETE` | `/api/estoque/{id}` | Busca / atualiza / remove |
 
-Erros seguem um formato único via [GlobalExceptionHandler](backend/src/main/java/com/mecanix/exception/GlobalExceptionHandler.java): `BusinessException` → `400`, `ResourceNotFoundException` → `404`.
+Erros seguem um formato único `{status, erro, detalhes?, timestamp}` via [GlobalExceptionHandler](backend/src/main/java/com/mecanix/exception/GlobalExceptionHandler.java): `BusinessException` → `400`, `ResourceNotFoundException` → `404`. Sessão ausente ou perfil sem permissão → `401` / `403` (ver [Autenticação e autorização](#-autenticação-e-autorização)).
 
 ---
 
@@ -185,6 +193,7 @@ mecanix/
 ├── backend/
 │   ├── .env.example
 │   ├── pom.xml
+│   ├── src/test/java/com/mecanix/config/   # SessionInterceptorTest
 │   └── src/main/
 │       ├── java/com/mecanix/
 │       │   ├── config/        # CORS, SessionInterceptor, DataInitializer (dev)

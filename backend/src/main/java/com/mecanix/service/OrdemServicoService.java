@@ -153,7 +153,6 @@ public class OrdemServicoService {
         r.setOrdensConcluidas(concluidas.size());
         r.setTotalClientes(cliRepo.count());
         r.setFaturamentoConcluido(fat);
-        r.setAlertasEstoque(estRepo.findAlertasEstoque().size());
         r.setTicketMedio(ticket);
         return r;
     }

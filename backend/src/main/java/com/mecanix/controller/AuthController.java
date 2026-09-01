@@ -3,29 +3,22 @@ package com.mecanix.controller;
 import com.mecanix.dto.LoginRequest;
 import com.mecanix.dto.UsuarioResponse;
 import com.mecanix.exception.BusinessException;
-import com.mecanix.model.Usuario;
-import com.mecanix.repository.UsuarioRepository;
+import com.mecanix.service.AuthService;
 import jakarta.servlet.http.*;
 import jakarta.validation.Valid;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController @RequestMapping("/api/auth")
 public class AuthController {
-    private final UsuarioRepository repo;
-    private final BCryptPasswordEncoder enc = new BCryptPasswordEncoder();
+    private final AuthService auth;
 
-    public AuthController(UsuarioRepository repo) { this.repo = repo; }
+    public AuthController(AuthService auth) { this.auth = auth; }
 
     @PostMapping("/login")
     public UsuarioResponse login(@Valid @RequestBody LoginRequest req, HttpServletRequest httpReq) {
-        Usuario u = repo.findByEmail(req.getEmail())
-            .orElseThrow(() -> new BusinessException("E-mail ou senha incorretos"));
-        if (!enc.matches(req.getSenha(), u.getSenha()))
-            throw new BusinessException("E-mail ou senha incorretos");
-        UsuarioResponse resp = UsuarioResponse.from(u);
+        UsuarioResponse resp = auth.autenticar(req.getEmail(), req.getSenha());
         HttpSession session = httpReq.getSession(true);
         session.setAttribute("usuario", resp);
         session.setMaxInactiveInterval(28800);
