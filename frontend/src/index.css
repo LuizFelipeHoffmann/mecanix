@@ -11,6 +11,7 @@
   --bl:#2563eb; --bld:rgba(59,130,246,.14);
   --rd:#dc2626; --rdd:rgba(239,68,68,.14);
   --yw:#b45309; --ywd:rgba(245,158,11,.16);
+  --vi:#7c3aed; --vid:rgba(124,58,237,.12);
   --sb-w:215px;
 }
 html, body { height: 100%; margin: 0; overflow: hidden; }
@@ -76,14 +77,14 @@ body { background:var(--bg); color:var(--tx); font-family:system-ui,-apple-syste
 /* ── METRICS ── */
 .metrics { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:14px; }
 @media(min-width:900px) { .metrics { grid-template-columns:repeat(4,1fr); } }
-.met { background:var(--bg2); border:1px solid var(--brd); border-radius:12px; padding:14px; position:relative; overflow:hidden; cursor:pointer; transition:border-color .15s; }
-.met:hover, .met:active { border-color:var(--bra); }
-.met::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--mac, var(--or)); }
-.mlbl { font-size:10px; color:var(--tx2); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
-.mval { font-size:22px; font-weight:800; color:var(--tx); line-height:1; }
+/* Cada card define --mac (cor) e --macd (fundo claro da mesma cor) */
+.met { --mac:var(--or); --macd:var(--org); background:linear-gradient(135deg, var(--macd), var(--bg2) 70%); border:1px solid var(--brd); border-left:4px solid var(--mac); border-radius:12px; padding:14px 14px 14px 16px; position:relative; overflow:hidden; cursor:pointer; transition:box-shadow .15s, transform .15s; box-shadow:0 1px 2px rgba(15,17,23,.05); }
+.met:hover, .met:active { box-shadow:0 6px 18px rgba(15,17,23,.10); transform:translateY(-1px); }
+.mlbl { font-size:10px; color:var(--tx2); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; font-weight:600; padding-right:40px; }
+.mval { font-size:22px; font-weight:800; color:var(--mac); line-height:1; }
 .msub { font-size:11px; color:var(--tx2); margin-top:4px; }
-.mico { position:absolute; top:12px; right:12px; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; }
-.mico svg { width:14px; height:14px; }
+.mico { position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--mac); }
+.mico svg { width:18px; height:18px; fill:#fff; }
 
 /* ── TABLES ── */
 .tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:0 14px; }

@@ -60,12 +60,12 @@ export default function Relatorios() {
     <Layout title="Relatórios" pageId="relatorios" actions={actions}>
       <div className="metrics" style={{ marginBottom: 20 }}>
         {[
-          { lbl: 'Faturamento concluído', val: fmtCur(rev), sub: `${done.length} OS concluída(s)`, ico: 'var(--or)', bg: 'var(--ord)' },
+          { lbl: 'Faturamento concluído', val: fmtCur(rev), sub: `${done.length} OS concluída(s)`, ico: 'var(--or)', bg: 'var(--ord)', mac: 'var(--or)' },
           { lbl: 'Ticket médio', val: fmtCur(ticket), sub: 'por OS concluída', ico: 'var(--bl)', bg: 'var(--bld)', mac: 'var(--bl)' },
           { lbl: 'Em aberto (potencial)', val: fmtCur(revOp), sub: `${open.length} OS em andamento`, ico: 'var(--yw)', bg: 'var(--ywd)', mac: 'var(--yw)' },
           { lbl: 'Total de clientes', val: String(clientes.length), sub: `${clientes.length} cadastrado(s)`, ico: 'var(--gn)', bg: 'var(--gnd)', mac: 'var(--gn)' },
         ].map(m => (
-          <div key={m.lbl} className="met" style={{ '--mac': m.mac } as React.CSSProperties}>
+          <div key={m.lbl} className="met" style={{ '--mac': m.mac, '--macd': m.bg } as React.CSSProperties}>
             <div className="mlbl">{m.lbl}</div>
             <div className="mval" style={{ fontSize: 16 }}>{m.val}</div>
             <div className="msub">{m.sub}</div>
