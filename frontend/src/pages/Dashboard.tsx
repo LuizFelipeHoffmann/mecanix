@@ -63,7 +63,7 @@ export default function Dashboard() {
         </div>
         <div className="met" style={{ '--mac': 'var(--vi)', '--macd': 'var(--vid)' } as React.CSSProperties} onClick={() => navigate('/relatorios')}>
           <div className="mlbl">Faturamento concluído</div>
-          <div className="mval" style={{ fontSize: 14 }}>{fmtCur(dash.faturamentoConcluido)}</div>
+          <div className="mval" style={{ fontSize: 20 }}>{fmtCur(dash.faturamentoConcluido)}</div>
           <div className="msub">a receber: {fmtCur(dash.valorAReceber)}</div>
           <div className="mico">
             <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" /></svg>
@@ -115,8 +115,8 @@ export default function Dashboard() {
                 {alertas.map(e => (
                   <div key={e.id} className="ai">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" /></svg>
-                    <div style={{ fontSize: 13, flex: 1 }}>{e.nome}</div>
-                    <div style={{ fontSize: 12, color: 'var(--rd)', fontWeight: 600 }}>{e.quantidade} un.</div>
+                    <div style={{ fontSize: 14, flex: 1 }}>{e.nome}</div>
+                    <div style={{ fontSize: 13, color: 'var(--rd)', fontWeight: 600 }}>{e.quantidade} un.</div>
                   </div>
                 ))}
               </div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
           ) : (
             <div className="card">
               <div className="chd"><div className="ctitle" style={{ color: 'var(--gn)' }}>Estoque em dia</div></div>
-              <div className="cbd"><div style={{ fontSize: 12, color: 'var(--tx2)' }}>Todos os itens acima do mínimo.</div></div>
+              <div className="cbd"><div style={{ fontSize: 13, color: 'var(--tx2)' }}>Todos os itens acima do mínimo.</div></div>
             </div>
           )}
         </div>

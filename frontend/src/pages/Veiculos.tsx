@@ -41,7 +41,7 @@ function VeiculoList() {
             placeholder="Buscar por placa, marca, modelo, proprietário..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 14, outline: 'none', width: 'min(100%, 320px)' }}
           />
         </div>
         <div className="tbl-wrap tbl-desktop">
@@ -56,7 +56,7 @@ function VeiculoList() {
                     <td style={{ fontWeight: 500 }}>{v.marca} {v.modelo}</td>
                     <td style={{ color: 'var(--tx2)' }}>{v.ano || '—'}</td>
                     <td style={{ color: 'var(--tx2)' }}>{v.cor || '—'}</td>
-                    <td><span style={{ background: col + '22', color: col, fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 4 }}>{TIPO_LABELS[v.tipo] || v.tipo}</span></td>
+                    <td><span style={{ background: col + '22', color: col, fontSize: 12, fontWeight: 600, padding: '2px 7px', borderRadius: 4 }}>{TIPO_LABELS[v.tipo] || v.tipo}</span></td>
                     <td>{v.clienteNome || '—'}</td>
                     <td><span className="badge bbl">{v.totalOrdens} OS</span></td>
                     <td><div className="ib" onClick={() => navigate(`/veiculos/${v.id}/edit`)}><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg></div></td>
@@ -73,11 +73,11 @@ function VeiculoList() {
               <div key={v.id} className="mob-card">
                 <div className="mob-card-top">
                   <span className="osnum">{v.placa}</span>
-                  <span style={{ background: col + '22', color: col, fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5 }}>{TIPO_LABELS[v.tipo] || v.tipo}</span>
+                  <span style={{ background: col + '22', color: col, fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 5 }}>{TIPO_LABELS[v.tipo] || v.tipo}</span>
                 </div>
                 <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--tx)', marginBottom: 4 }}>{v.marca} {v.modelo} {v.ano || ''} · {v.cor || ''}</div>
                 <div className="mob-card-row">
-                  <span style={{ color: 'var(--tx2)', fontSize: 13 }}>{v.clienteNome || '—'}</span>
+                  <span style={{ color: 'var(--tx2)', fontSize: 14 }}>{v.clienteNome || '—'}</span>
                   <div className="ib" onClick={() => navigate(`/veiculos/${v.id}/edit`)}><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" /></svg></div>
                 </div>
               </div>
@@ -225,7 +225,7 @@ function VeiculoForm() {
             <div className="fg"><label>Km</label><input className="finp" type="number" placeholder="45000" value={km} onChange={e => setKm(e.target.value)} /></div>
             <div className="fg full"><label>Observações</label><input className="finp" type="text" placeholder="Observações sobre o veículo" value={obs} onChange={e => setObs(e.target.value)} /></div>
           </div>
-          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
           <div className="factions">
             <button className="btn btn-g" onClick={() => navigate('/veiculos')}>Cancelar</button>
             {editId && <button className="btn" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: '1px solid rgba(239,68,68,.3)' }} onClick={del}>Excluir</button>}

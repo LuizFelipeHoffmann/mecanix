@@ -67,7 +67,7 @@ export default function Relatorios() {
         ].map(m => (
           <div key={m.lbl} className="met" style={{ '--mac': m.mac, '--macd': m.bg } as React.CSSProperties}>
             <div className="mlbl">{m.lbl}</div>
-            <div className="mval" style={{ fontSize: 16 }}>{m.val}</div>
+            <div className="mval" style={{ fontSize: 20 }}>{m.val}</div>
             <div className="msub">{m.sub}</div>
           </div>
         ))}
@@ -86,7 +86,7 @@ export default function Relatorios() {
                 ['Em aberto (potencial)', fmtCur(revOp), 'var(--yw)'],
               ].map(([l, v, c]) => (
                 <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--brd)' }}>
-                  <span style={{ fontSize: 13, color: 'var(--tx2)' }}>{l}</span>
+                  <span style={{ fontSize: 14, color: 'var(--tx2)' }}>{l}</span>
                   <span style={{ fontWeight: 700, color: c as string }}>{v}</span>
                 </div>
               ))}
@@ -103,7 +103,7 @@ export default function Relatorios() {
                 ['Total', ordens.length, 'var(--tx)'],
               ].map(([l, v, c]) => (
                 <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--brd)' }}>
-                  <span style={{ fontSize: 13, color: 'var(--tx2)' }}>{l}</span>
+                  <span style={{ fontSize: 14, color: 'var(--tx2)' }}>{l}</span>
                   <span style={{ fontWeight: 700, color: c as string }}>{v}</span>
                 </div>
               ))}
@@ -117,11 +117,11 @@ export default function Relatorios() {
             <div className="cbd">
               {topSvcs.length ? topSvcs.map(([l, n]) => (
                 <div key={l} className="prow">
-                  <div style={{ fontSize: 12, color: 'var(--tx2)', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l}</div>
+                  <div style={{ fontSize: 13, color: 'var(--tx2)', width: 100, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l}</div>
                   <div className="pbar"><div className="pfill" style={{ width: `${Math.round(n / maxSvc * 100)}%` }} /></div>
-                  <div style={{ fontSize: 12, color: 'var(--tx2)', width: 24, textAlign: 'right' }}>{n}</div>
+                  <div style={{ fontSize: 13, color: 'var(--tx2)', width: 24, textAlign: 'right' }}>{n}</div>
                 </div>
-              )) : <div style={{ color: 'var(--tx3)', fontSize: 12 }}>Sem dados suficientes.</div>}
+              )) : <div style={{ color: 'var(--tx3)', fontSize: 13 }}>Sem dados suficientes.</div>}
             </div>
           </div>
           <div className="card">
@@ -130,12 +130,12 @@ export default function Relatorios() {
               {topCli.length ? topCli.map(([nome, val], i) => (
                 <div key={nome} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--brd)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--ord)', color: 'var(--or)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</div>
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{nome}</span>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--ord)', color: 'var(--or)', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</div>
+                    <span style={{ fontSize: 14, fontWeight: 500 }}>{nome}</span>
                   </div>
                   <span style={{ fontWeight: 700, color: 'var(--or)' }}>{fmtCur(val)}</span>
                 </div>
-              )) : <div style={{ color: 'var(--tx3)', fontSize: 12 }}>Sem dados.</div>}
+              )) : <div style={{ color: 'var(--tx3)', fontSize: 13 }}>Sem dados.</div>}
             </div>
           </div>
           {alertas.length > 0 && (
@@ -145,8 +145,8 @@ export default function Relatorios() {
                 {alertas.map(e => (
                   <div key={e.id} className="ai">
                     <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" /></svg>
-                    <div style={{ fontSize: 13, flex: 1 }}>{e.nome}</div>
-                    <div style={{ fontSize: 12, color: 'var(--rd)', fontWeight: 600 }}>{e.quantidade} un.</div>
+                    <div style={{ fontSize: 14, flex: 1 }}>{e.nome}</div>
+                    <div style={{ fontSize: 13, color: 'var(--rd)', fontWeight: 600 }}>{e.quantidade} un.</div>
                   </div>
                 ))}
               </div>

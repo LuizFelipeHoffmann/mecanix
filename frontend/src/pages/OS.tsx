@@ -65,7 +65,7 @@ function OSList() {
             placeholder="Buscar por OS, cliente, veículo, placa, mecânico..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 14, outline: 'none', width: 'min(100%, 320px)' }}
           />
         </div>
         <div className="tbl-wrap tbl-desktop">
@@ -93,7 +93,7 @@ function OSList() {
             <div key={o.id} className="mob-card" onClick={() => navigate(`/os/${o.id}`)}>
               <div className="mob-card-top"><span className="osnum">{osNum(o.id)}</span><Badge status={o.status} /></div>
               <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--tx)' }}>{o.clienteNome || '—'}</div>
-              <div style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 6 }}>{o.veiculoDesc || '—'} · {o.veiculoPlaca || '—'}</div>
+              <div style={{ fontSize: 14, color: 'var(--tx2)', marginBottom: 6 }}>{o.veiculoDesc || '—'} · {o.veiculoPlaca || '—'}</div>
               <div className="mob-card-row"><span style={{ fontWeight: 700, color: 'var(--or)' }}>{fmtCur(o.total)}</span><PagtoBadge os={o} /></div>
             </div>
           ))}
@@ -250,8 +250,8 @@ function OSForm() {
               <input className="finp" type="number" placeholder="Valor R$" style={{ width: 120, flexShrink: 0 }} step={0.01} value={s.v || ''} onChange={e => updateSvc(i, 'v', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removeSvc(i)}>×</button>
             </div>
-          )) : <div style={{ fontSize: 13, color: 'var(--tx3)' }}>Nenhum serviço adicionado.</div>}
-          {svcs.length > 0 && <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--tx2)', marginTop: 8 }}>Total serviços: {fmtCur(totalSvcs)}</div>}
+          )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhum serviço adicionado.</div>}
+          {svcs.length > 0 && <div style={{ textAlign: 'right', fontSize: 14, color: 'var(--tx2)', marginTop: 8 }}>Total serviços: {fmtCur(totalSvcs)}</div>}
         </div>
       </div>
 
@@ -271,14 +271,14 @@ function OSForm() {
               <input className="finp" type="number" placeholder="R$ unit." style={{ width: 110, flexShrink: 0 }} step={0.01} value={p.preco || ''} onChange={e => updatePeca(i, 'preco', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removePeca(i)}>×</button>
             </div>
-          )) : <div style={{ fontSize: 13, color: 'var(--tx3)' }}>Nenhuma peça adicionada.</div>}
-          {pecas.length > 0 && <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--tx2)', marginTop: 8 }}>Total peças: {fmtCur(totalPecas)}</div>}
+          )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhuma peça adicionada.</div>}
+          {pecas.length > 0 && <div style={{ textAlign: 'right', fontSize: 14, color: 'var(--tx2)', marginTop: 8 }}>Total peças: {fmtCur(totalPecas)}</div>}
         </div>
       </div>
 
       <div className="card">
         <div className="cbd">
-          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
           <div className="factions">
             <button className="btn btn-g" onClick={() => navigate('/os')}>Cancelar</button>
             {editId && <button className="btn" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: '1px solid rgba(239,68,68,.3)' }} onClick={del}>Excluir</button>}
@@ -365,7 +365,7 @@ function OSDetail() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, padding: '20px 20px 16px' }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--or)' }}>{osNum(os.id)}</div>
-            <div style={{ fontSize: 13, color: 'var(--tx2)', marginTop: 4 }}>Emitida em {fmtDate(os.data)}</div>
+            <div style={{ fontSize: 14, color: 'var(--tx2)', marginTop: 4 }}>Emitida em {fmtDate(os.data)}</div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <Badge status={os.status} />
@@ -377,19 +377,19 @@ function OSDetail() {
             {os.status === 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>↩ Reabrir</button>}
             {os.clienteEmail
               ? <button className="btn btn-g sm" disabled={emailSending} onClick={enviarEmail}>{emailDone ? '✅ E-mail enviado!' : emailSending ? 'Enviando...' : '📧 Enviar OS por e-mail'}</button>
-              : <span style={{ fontSize: 11, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}
+              : <span style={{ fontSize: 12, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, padding: '16px 20px', borderTop: '1px solid var(--brd)', borderBottom: '1px solid var(--brd)' }}>
-          <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>CLIENTE</div><div style={{ fontWeight: 600 }}>{os.clienteNome}</div></div>
-          <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>VEÍCULO</div><div style={{ fontWeight: 600 }}>{os.veiculoDesc}</div><div style={{ fontSize: 13, color: 'var(--tx2)' }}>{os.veiculoPlaca}</div></div>
-          <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>MECÂNICO</div><div style={{ fontWeight: 600 }}>{os.mecanico || '—'}</div></div>
-          {os.observacoes && <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>OBSERVAÇÕES</div><div style={{ fontSize: 13, color: 'var(--tx2)' }}>{os.observacoes}</div></div>}
+          <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>CLIENTE</div><div style={{ fontWeight: 600 }}>{os.clienteNome}</div></div>
+          <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>VEÍCULO</div><div style={{ fontWeight: 600 }}>{os.veiculoDesc}</div><div style={{ fontSize: 14, color: 'var(--tx2)' }}>{os.veiculoPlaca}</div></div>
+          <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>MECÂNICO</div><div style={{ fontWeight: 600 }}>{os.mecanico || '—'}</div></div>
+          {os.observacoes && <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>OBSERVAÇÕES</div><div style={{ fontSize: 14, color: 'var(--tx2)' }}>{os.observacoes}</div></div>}
         </div>
 
         <div style={{ padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Serviços</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Serviços</div>
           <table className="tbl" style={{ marginBottom: 20 }}>
             <thead><tr><th>Descrição</th><th style={{ textAlign: 'right' }}>Valor</th></tr></thead>
             <tbody>
@@ -397,10 +397,10 @@ function OSDetail() {
                 <tr key={i}><td>{s.descricao}</td><td style={{ textAlign: 'right', color: 'var(--or)', fontWeight: 600 }}>{fmtCur(s.valor)}</td></tr>
               )) : <tr><td colSpan={2} style={{ color: 'var(--tx3)' }}>Nenhum serviço.</td></tr>}
             </tbody>
-            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td style={{ color: 'var(--tx2)', fontSize: 12 }}>Total serviços</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalServicos)}</td></tr></tfoot>
+            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td style={{ color: 'var(--tx2)', fontSize: 13 }}>Total serviços</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalServicos)}</td></tr></tfoot>
           </table>
 
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Peças</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Peças</div>
           <table className="tbl">
             <thead><tr><th>Peça</th><th style={{ textAlign: 'center' }}>Qtd</th><th style={{ textAlign: 'right' }}>Unit.</th><th style={{ textAlign: 'right' }}>Subtotal</th></tr></thead>
             <tbody>
@@ -413,7 +413,7 @@ function OSDetail() {
                 </tr>
               )) : <tr><td colSpan={4} style={{ color: 'var(--tx3)' }}>Nenhuma peça.</td></tr>}
             </tbody>
-            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td colSpan={3} style={{ color: 'var(--tx2)', fontSize: 12 }}>Total peças</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalPecas)}</td></tr></tfoot>
+            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td colSpan={3} style={{ color: 'var(--tx2)', fontSize: 13 }}>Total peças</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalPecas)}</td></tr></tfoot>
           </table>
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: '2px solid var(--brd)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
