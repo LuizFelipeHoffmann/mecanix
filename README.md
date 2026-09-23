@@ -57,6 +57,7 @@ Copie `backend/.env.example` e preencha:
 | `DB_PASSWORD` | — | **Obrigatória** |
 | `MAIL_USERNAME` | — | Gmail remetente das OS |
 | `MAIL_PASSWORD` | — | *App Password* do Gmail (não a senha da conta) |
+| `MAIL_NOME` | `MECANIX Oficina` | Nome exibido como remetente (ex.: nome da oficina) |
 | `SPRING_PROFILES_ACTIVE` | `dev` | `dev` ou `prod` |
 
 No PowerShell:
@@ -69,6 +70,15 @@ $env:MAIL_PASSWORD = "sua_app_password"
 
 > **Alternativa (dev):** criar `backend/src/main/resources/application-dev.properties` com os valores.
 > Esse arquivo é ignorado pelo Git — nunca commite credenciais.
+
+### 3. E-mail (SMTP) — quem envia
+
+O e-mail da OS sai **da conta Gmail da própria oficina**, via SMTP do Gmail (`smtp.gmail.com:587`, STARTTLS):
+
+- **Remetente:** o endereço em `MAIL_USERNAME`, exibido com o nome `MAIL_NOME` — o cliente vê, por exemplo, `Oficina do Zé <oficinadoze@gmail.com>`.
+- **Autenticação:** `MAIL_PASSWORD` é uma *senha de app* do Google (Conta Google → Segurança → Verificação em duas etapas → Senhas de app), nunca a senha normal da conta.
+- **Destinatário:** o e-mail cadastrado no cliente da OS. Se o cliente responder, a resposta chega na caixa de entrada da oficina.
+- Após o envio, a tela da OS mostra para quem foi e qual remetente foi usado.
 
 ---
 

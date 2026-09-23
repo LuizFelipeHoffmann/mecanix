@@ -144,7 +144,7 @@ export const ordensAPI = {
   criar:     (dados: unknown) => apiFetch<OrdemServico>('POST', '/ordens', dados),
   atualizar: (id: number, dados: unknown) => apiFetch<OrdemServico>('PUT', `/ordens/${id}`, dados),
   deletar:   (id: number) => apiFetch<void>('DELETE', `/ordens/${id}`),
-  enviarEmail: (id: number) => apiFetch<{ msg: string }>('POST', `/ordens/${id}/enviar-email`),
+  enviarEmail: (id: number) => apiFetch<{ msg: string; remetente: string }>('POST', `/ordens/${id}/enviar-email`),
   darBaixa:  (id: number, formaPagamento: string) => apiFetch<OrdemServico>('PUT', `/ordens/${id}/pagamento`, { formaPagamento }),
   estornar:  (id: number) => apiFetch<OrdemServico>('DELETE', `/ordens/${id}/pagamento`),
 };

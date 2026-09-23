@@ -334,18 +334,18 @@ function OSDetail() {
   async function enviarEmail() {
     setEmailSending(true)
     try {
-      await ordensAPI.enviarEmail(osId)
+      const r = await ordensAPI.enviarEmail(osId)
       setEmailDone(true)
       const t = document.getElementById('email-toast')
       const b = document.getElementById('toast-body')
       if (t && b) {
-        b.innerHTML = `OS enviada com sucesso para <strong>${os?.clienteEmail}</strong>`
+        b.textContent = `OS enviada para ${os?.clienteEmail}. Remetente: ${r.remetente}`
         t.classList.add('show')
         setTimeout(() => t.classList.remove('show'), 6000)
       }
       setTimeout(() => setEmailDone(false), 3000)
     } catch (e: unknown) {
-      alert('Erro ao enviar e-mail: ' + (e instanceof Error ? e.message : '') + '\n\nVerifique se o Gmail e a senha de app estão configurados em application.properties')
+      alert('Erro ao enviar e-mail: ' + (e instanceof Error ? e.message : '') + '\n\nVerifique as variáveis MAIL_USERNAME (Gmail da oficina) e MAIL_PASSWORD (senha de app) no backend.')
     } finally { setEmailSending(false) }
   }
 

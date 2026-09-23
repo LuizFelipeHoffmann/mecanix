@@ -66,7 +66,8 @@ public class OrdemController {
             throw new BusinessException("O cliente não possui e-mail cadastrado");
         try {
             emailService.enviarOS(os, os.getClienteEmail());
-            return ResponseEntity.ok(Map.of("msg", "E-mail enviado para " + os.getClienteEmail()));
+            return ResponseEntity.ok(Map.of("msg", "E-mail enviado para " + os.getClienteEmail(),
+                "remetente", emailService.getRemetente()));
         } catch (Exception e) {
             throw new BusinessException("Erro ao enviar e-mail: " + e.getMessage());
         }
