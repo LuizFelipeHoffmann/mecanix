@@ -23,6 +23,11 @@ public class EmailService {
     @Value("${mecanix.mail.remetente}")
     private String remetente;
 
+    @Value("${mecanix.mail.nome}")
+    private String nomeRemetente;
+
+    public String getRemetente() { return nomeRemetente + " <" + remetente + ">"; }
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
@@ -31,8 +36,8 @@ public class EmailService {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        // From com encoding correto para evitar erro de conversão
-        helper.setFrom(new InternetAddress(remetente, "MECANIX Oficina", "UTF-8"));
+        // Remetente = conta Gmail da oficina (MAIL_USERNAME), exibida com o nome MAIL_NOME
+        helper.setFrom(new InternetAddress(remetente, nomeRemetente, "UTF-8"));
         helper.setTo(destinatario);
         helper.setSubject("Ordem de Servico " + osNum(os.getId()) + " - MECANIX");
         helper.setText(buildHtml(os), true);

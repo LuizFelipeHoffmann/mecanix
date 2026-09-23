@@ -57,6 +57,7 @@ Copie `backend/.env.example` e preencha:
 | `DB_PASSWORD` | — | **Obrigatória** |
 | `MAIL_USERNAME` | — | Gmail remetente das OS |
 | `MAIL_PASSWORD` | — | *App Password* do Gmail (não a senha da conta) |
+| `MAIL_NOME` | `MECANIX Oficina` | Nome exibido como remetente (ex.: nome da oficina) |
 | `SPRING_PROFILES_ACTIVE` | `dev` | `dev` ou `prod` |
 
 No PowerShell:
@@ -69,6 +70,15 @@ $env:MAIL_PASSWORD = "sua_app_password"
 
 > **Alternativa (dev):** criar `backend/src/main/resources/application-dev.properties` com os valores.
 > Esse arquivo é ignorado pelo Git — nunca commite credenciais.
+
+### 3. E-mail (SMTP) — quem envia
+
+O e-mail da OS sai **da conta Gmail da própria oficina**, via SMTP do Gmail (`smtp.gmail.com:587`, STARTTLS):
+
+- **Remetente:** o endereço em `MAIL_USERNAME`, exibido com o nome `MAIL_NOME` — o cliente vê, por exemplo, `Oficina do Zé <oficinadoze@gmail.com>`.
+- **Autenticação:** `MAIL_PASSWORD` é uma *senha de app* do Google (Conta Google → Segurança → Verificação em duas etapas → Senhas de app), nunca a senha normal da conta.
+- **Destinatário:** o e-mail cadastrado no cliente da OS. Se o cliente responder, a resposta chega na caixa de entrada da oficina.
+- Após o envio, a tela da OS mostra para quem foi e qual remetente foi usado.
 
 ---
 
@@ -154,6 +164,7 @@ O menu do frontend ([Layout.tsx](frontend/src/components/Layout.tsx)) esconde as
 | `GET` | `/api/ordens?status=` | Filtra por status |
 | `GET` `POST` | `/api/ordens` | Lista / cria |
 | `GET` `PUT` `DELETE` | `/api/ordens/{id}` | Busca / atualiza / remove |
+| `PUT` `DELETE` | `/api/ordens/{id}/pagamento` | Dá baixa (`{"formaPagamento":"PIX"}`) / estorna o pagamento |
 | `POST` | `/api/ordens/{id}/enviar-email` | Envia a OS por e-mail ao cliente |
 | `GET` | `/api/estoque/alertas` | Itens abaixo do mínimo |
 | `GET` | `/api/estoque?tipo=` | Peças compatíveis com um tipo de veículo |
@@ -171,6 +182,7 @@ Erros seguem um formato único `{status, erro, detalhes?, timestamp}` via [Globa
 - ✅ Ordens de Serviço com itens de serviço (mão de obra) e peças
 - ✅ **Baixa automática de estoque** ao lançar peças na OS, com estorno na edição e na exclusão
 - ✅ Bloqueio de OS com estoque insuficiente
+- ✅ **Baixa de pagamento** da OS (Dinheiro, PIX, débito, crédito) com status Pago/Pendente e estorno
 - ✅ Envio da OS por e-mail em HTML ([EmailService](backend/src/main/java/com/mecanix/service/EmailService.java))
 - ✅ Clientes com CPF único e validação de formato
 - ✅ Veículos com placa única, tipo (Sedan/Hatch/SUV/Pickup/Elétrico) e autocomplete de marca/modelo

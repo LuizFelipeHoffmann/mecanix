@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
+import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
 function Badge({ status }: { status: string }) {
   return <span className={`badge ${STATUS_BADGE[status] || 'bgy'}`}><span className="bdot" />{STATUS_LABELS[status] || status}</span>
+}
+
+function PagtoBadge({ os }: { os: OrdemServico }) {
+  if (os.status === 'CANCELADO') return <span style={{ color: 'var(--tx3)' }}>—</span>
+  return os.dataPagamento
+    ? <span className="badge bgn"><span className="bdot" />Pago</span>
+    : <span className="badge brd2"><span className="bdot" />Pendente</span>
 }
 
 // ── LISTA ──
@@ -58,12 +65,12 @@ function OSList() {
             placeholder="Buscar por OS, cliente, veículo, placa, mecânico..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 14, outline: 'none', width: 'min(100%, 320px)' }}
           />
         </div>
         <div className="tbl-wrap tbl-desktop">
           <table className="tbl">
-            <thead><tr><th>OS</th><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Mecânico</th><th>Status</th><th style={{ textAlign: 'right' }}>Total</th><th>Data</th></tr></thead>
+            <thead><tr><th>OS</th><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Mecânico</th><th>Status</th><th>Pagamento</th><th style={{ textAlign: 'right' }}>Total</th><th>Data</th></tr></thead>
             <tbody>
               {filtradas.length ? filtradas.map(o => (
                 <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/os/${o.id}`)}>
@@ -73,10 +80,11 @@ function OSList() {
                   <td style={{ color: 'var(--tx2)' }}>{o.veiculoPlaca || '—'}</td>
                   <td style={{ color: 'var(--tx2)' }}>{o.mecanico || '—'}</td>
                   <td><Badge status={o.status} /></td>
+                  <td><PagtoBadge os={o} /></td>
                   <td style={{ fontWeight: 700, color: 'var(--or)', textAlign: 'right' }}>{fmtCur(o.total)}</td>
                   <td>{fmtDate(o.data)}</td>
                 </tr>
-              )) : <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>Nenhuma OS encontrada.</td></tr>}
+              )) : <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>Nenhuma OS encontrada.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -85,8 +93,8 @@ function OSList() {
             <div key={o.id} className="mob-card" onClick={() => navigate(`/os/${o.id}`)}>
               <div className="mob-card-top"><span className="osnum">{osNum(o.id)}</span><Badge status={o.status} /></div>
               <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--tx)' }}>{o.clienteNome || '—'}</div>
-              <div style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 6 }}>{o.veiculoDesc || '—'} · {o.veiculoPlaca || '—'}</div>
-              <div style={{ fontWeight: 700, color: 'var(--or)' }}>{fmtCur(o.total)}</div>
+              <div style={{ fontSize: 14, color: 'var(--tx2)', marginBottom: 6 }}>{o.veiculoDesc || '—'} · {o.veiculoPlaca || '—'}</div>
+              <div className="mob-card-row"><span style={{ fontWeight: 700, color: 'var(--or)' }}>{fmtCur(o.total)}</span><PagtoBadge os={o} /></div>
             </div>
           ))}
         </div>
@@ -237,13 +245,13 @@ function OSForm() {
         </div>
         <div className="cbd">
           {svcs.length ? svcs.map((s, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid var(--brd)', marginBottom: 8 }}>
-              <input className="finp" type="text" placeholder="Descrição do serviço" style={{ flex: 2 }} value={s.d} onChange={e => updateSvc(i, 'd', e.target.value)} />
+            <div key={i} className="item-row">
+              <input className="finp" type="text" placeholder="Descrição do serviço" style={{ flex: 2, minWidth: 0 }} value={s.d} onChange={e => updateSvc(i, 'd', e.target.value)} />
               <input className="finp" type="number" placeholder="Valor R$" style={{ width: 120, flexShrink: 0 }} step={0.01} value={s.v || ''} onChange={e => updateSvc(i, 'v', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removeSvc(i)}>×</button>
             </div>
-          )) : <div style={{ fontSize: 13, color: 'var(--tx3)' }}>Nenhum serviço adicionado.</div>}
-          {svcs.length > 0 && <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--tx2)', marginTop: 8 }}>Total serviços: {fmtCur(totalSvcs)}</div>}
+          )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhum serviço adicionado.</div>}
+          {svcs.length > 0 && <div style={{ textAlign: 'right', fontSize: 14, color: 'var(--tx2)', marginTop: 8 }}>Total serviços: {fmtCur(totalSvcs)}</div>}
         </div>
       </div>
 
@@ -254,7 +262,7 @@ function OSForm() {
         </div>
         <div className="cbd">
           {pecas.length ? pecas.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', paddingBottom: 8, borderBottom: '1px solid var(--brd)', marginBottom: 8 }}>
+            <div key={i} className="item-row">
               <select className="finp" style={{ flex: 2, minWidth: 160 }} value={p.id || ''} onChange={e => selectPeca(i, e.target.value)}>
                 <option value="">Selecione...</option>
                 {estoqueCache.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
@@ -263,14 +271,14 @@ function OSForm() {
               <input className="finp" type="number" placeholder="R$ unit." style={{ width: 110, flexShrink: 0 }} step={0.01} value={p.preco || ''} onChange={e => updatePeca(i, 'preco', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removePeca(i)}>×</button>
             </div>
-          )) : <div style={{ fontSize: 13, color: 'var(--tx3)' }}>Nenhuma peça adicionada.</div>}
-          {pecas.length > 0 && <div style={{ textAlign: 'right', fontSize: 13, color: 'var(--tx2)', marginTop: 8 }}>Total peças: {fmtCur(totalPecas)}</div>}
+          )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhuma peça adicionada.</div>}
+          {pecas.length > 0 && <div style={{ textAlign: 'right', fontSize: 14, color: 'var(--tx2)', marginTop: 8 }}>Total peças: {fmtCur(totalPecas)}</div>}
         </div>
       </div>
 
       <div className="card">
         <div className="cbd">
-          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
           <div className="factions">
             <button className="btn btn-g" onClick={() => navigate('/os')}>Cancelar</button>
             {editId && <button className="btn" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: '1px solid rgba(239,68,68,.3)' }} onClick={del}>Excluir</button>}
@@ -291,6 +299,19 @@ function OSDetail() {
   const [loading, setLoading] = useState(true)
   const [emailSending, setEmailSending] = useState(false)
   const [emailDone, setEmailDone] = useState(false)
+  const [forma, setForma] = useState('PIX')
+
+  async function darBaixa() {
+    if (!confirm(`Confirmar recebimento de ${fmtCur(os?.total)} via ${FORMA_PAGAMENTO_LABELS[forma]}?`)) return
+    try { setOs(await ordensAPI.darBaixa(osId, forma)) }
+    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+  }
+
+  async function estornar() {
+    if (!confirm('Estornar o pagamento desta OS? Ela voltará a ficar pendente.')) return
+    try { setOs(await ordensAPI.estornar(osId)) }
+    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+  }
 
   useEffect(() => {
     ordensAPI.buscar(osId).then(setOs).finally(() => setLoading(false))
@@ -313,18 +334,18 @@ function OSDetail() {
   async function enviarEmail() {
     setEmailSending(true)
     try {
-      await ordensAPI.enviarEmail(osId)
+      const r = await ordensAPI.enviarEmail(osId)
       setEmailDone(true)
       const t = document.getElementById('email-toast')
       const b = document.getElementById('toast-body')
       if (t && b) {
-        b.innerHTML = `OS enviada com sucesso para <strong>${os?.clienteEmail}</strong>`
+        b.textContent = `OS enviada para ${os?.clienteEmail}. Remetente: ${r.remetente}`
         t.classList.add('show')
         setTimeout(() => t.classList.remove('show'), 6000)
       }
       setTimeout(() => setEmailDone(false), 3000)
     } catch (e: unknown) {
-      alert('Erro ao enviar e-mail: ' + (e instanceof Error ? e.message : '') + '\n\nVerifique se o Gmail e a senha de app estão configurados em application.properties')
+      alert('Erro ao enviar e-mail: ' + (e instanceof Error ? e.message : '') + '\n\nVerifique as variáveis MAIL_USERNAME (Gmail da oficina) e MAIL_PASSWORD (senha de app) no backend.')
     } finally { setEmailSending(false) }
   }
 
@@ -344,7 +365,7 @@ function OSDetail() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, padding: '20px 20px 16px' }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--or)' }}>{osNum(os.id)}</div>
-            <div style={{ fontSize: 13, color: 'var(--tx2)', marginTop: 4 }}>Emitida em {fmtDate(os.data)}</div>
+            <div style={{ fontSize: 14, color: 'var(--tx2)', marginTop: 4 }}>Emitida em {fmtDate(os.data)}</div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <Badge status={os.status} />
@@ -356,19 +377,19 @@ function OSDetail() {
             {os.status === 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>↩ Reabrir</button>}
             {os.clienteEmail
               ? <button className="btn btn-g sm" disabled={emailSending} onClick={enviarEmail}>{emailDone ? '✅ E-mail enviado!' : emailSending ? 'Enviando...' : '📧 Enviar OS por e-mail'}</button>
-              : <span style={{ fontSize: 11, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}
+              : <span style={{ fontSize: 12, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, padding: '16px 20px', borderTop: '1px solid var(--brd)', borderBottom: '1px solid var(--brd)' }}>
-          <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>CLIENTE</div><div style={{ fontWeight: 600 }}>{os.clienteNome}</div></div>
-          <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>VEÍCULO</div><div style={{ fontWeight: 600 }}>{os.veiculoDesc}</div><div style={{ fontSize: 13, color: 'var(--tx2)' }}>{os.veiculoPlaca}</div></div>
-          <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>MECÂNICO</div><div style={{ fontWeight: 600 }}>{os.mecanico || '—'}</div></div>
-          {os.observacoes && <div><div style={{ fontSize: 11, color: 'var(--tx3)', marginBottom: 4 }}>OBSERVAÇÕES</div><div style={{ fontSize: 13, color: 'var(--tx2)' }}>{os.observacoes}</div></div>}
+          <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>CLIENTE</div><div style={{ fontWeight: 600 }}>{os.clienteNome}</div></div>
+          <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>VEÍCULO</div><div style={{ fontWeight: 600 }}>{os.veiculoDesc}</div><div style={{ fontSize: 14, color: 'var(--tx2)' }}>{os.veiculoPlaca}</div></div>
+          <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>MECÂNICO</div><div style={{ fontWeight: 600 }}>{os.mecanico || '—'}</div></div>
+          {os.observacoes && <div><div style={{ fontSize: 12, color: 'var(--tx3)', marginBottom: 4 }}>OBSERVAÇÕES</div><div style={{ fontSize: 14, color: 'var(--tx2)' }}>{os.observacoes}</div></div>}
         </div>
 
         <div style={{ padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Serviços</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Serviços</div>
           <table className="tbl" style={{ marginBottom: 20 }}>
             <thead><tr><th>Descrição</th><th style={{ textAlign: 'right' }}>Valor</th></tr></thead>
             <tbody>
@@ -376,10 +397,10 @@ function OSDetail() {
                 <tr key={i}><td>{s.descricao}</td><td style={{ textAlign: 'right', color: 'var(--or)', fontWeight: 600 }}>{fmtCur(s.valor)}</td></tr>
               )) : <tr><td colSpan={2} style={{ color: 'var(--tx3)' }}>Nenhum serviço.</td></tr>}
             </tbody>
-            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td style={{ color: 'var(--tx2)', fontSize: 12 }}>Total serviços</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalServicos)}</td></tr></tfoot>
+            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td style={{ color: 'var(--tx2)', fontSize: 13 }}>Total serviços</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalServicos)}</td></tr></tfoot>
           </table>
 
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Peças</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', marginBottom: 10 }}>Peças</div>
           <table className="tbl">
             <thead><tr><th>Peça</th><th style={{ textAlign: 'center' }}>Qtd</th><th style={{ textAlign: 'right' }}>Unit.</th><th style={{ textAlign: 'right' }}>Subtotal</th></tr></thead>
             <tbody>
@@ -392,7 +413,7 @@ function OSDetail() {
                 </tr>
               )) : <tr><td colSpan={4} style={{ color: 'var(--tx3)' }}>Nenhuma peça.</td></tr>}
             </tbody>
-            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td colSpan={3} style={{ color: 'var(--tx2)', fontSize: 12 }}>Total peças</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalPecas)}</td></tr></tfoot>
+            <tfoot><tr style={{ borderTop: '1px solid var(--brd)' }}><td colSpan={3} style={{ color: 'var(--tx2)', fontSize: 13 }}>Total peças</td><td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--or)' }}>{fmtCur(os.totalPecas)}</td></tr></tfoot>
           </table>
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: '2px solid var(--brd)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
@@ -401,6 +422,32 @@ function OSDetail() {
           </div>
         </div>
       </div>
+
+      {os.status !== 'CANCELADO' && (
+        <div className="card">
+          <div className="chd">
+            <div className="ctitle">Pagamento</div>
+            <PagtoBadge os={os} />
+          </div>
+          <div className="cbd">
+            {os.dataPagamento ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ color: 'var(--tx2)' }}>
+                  Recebido em <b style={{ color: 'var(--tx)' }}>{fmtDate(os.dataPagamento)}</b> via <b style={{ color: 'var(--tx)' }}>{FORMA_PAGAMENTO_LABELS[os.formaPagamento || ''] || os.formaPagamento}</b>
+                </div>
+                <button className="btn btn-g sm" onClick={estornar}>↩ Estornar pagamento</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select className="finp" style={{ width: 'auto', flex: '1 1 180px' }} value={forma} onChange={e => setForma(e.target.value)}>
+                  {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+                <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none', padding: '10px 16px' }} onClick={darBaixa}>💰 Dar baixa de {fmtCur(os.total)}</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

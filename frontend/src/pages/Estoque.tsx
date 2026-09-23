@@ -34,7 +34,7 @@ function EstoqueList() {
   return (
     <Layout title="Estoque" pageId="estoque" actions={actions}>
       {alertaCount > 0 && (
-        <div style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, color: 'var(--rd)', fontSize: 13 }}>
+        <div style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, color: 'var(--rd)', fontSize: 14 }}>
           ⚠️ <strong>{alertaCount} item(ns)</strong> com estoque abaixo do mínimo.
         </div>
       )}
@@ -46,7 +46,7 @@ function EstoqueList() {
             placeholder="Buscar por código, nome, categoria..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 14, outline: 'none', width: 'min(100%, 320px)' }}
           />
         </div>
         <div className="tbl-wrap tbl-desktop">
@@ -60,11 +60,11 @@ function EstoqueList() {
                   <td style={{ color: 'var(--tx2)' }}>{e.categoria || '—'}</td>
                   <td>
                     <span style={{ fontWeight: 600, color: e.alertaEstoque ? 'var(--rd)' : 'var(--gn)' }}>{e.quantidade}</span>
-                    <span style={{ color: 'var(--tx3)', fontSize: 11 }}> / mín {e.quantidadeMinima}</span>
-                    {e.alertaEstoque && <span className="badge brd2" style={{ marginLeft: 6, fontSize: 10 }}>Baixo</span>}
+                    <span style={{ color: 'var(--tx3)', fontSize: 12 }}> / mín {e.quantidadeMinima}</span>
+                    {e.alertaEstoque && <span className="badge brd2" style={{ marginLeft: 6, fontSize: 12 }}>Baixo</span>}
                   </td>
                   <td style={{ fontWeight: 600, color: 'var(--or)' }}>{fmtCur(e.precoUnitario)}</td>
-                  <td style={{ color: 'var(--tx2)', fontSize: 12 }}>{(e.tipos || []).join(', ')}</td>
+                  <td style={{ color: 'var(--tx2)', fontSize: 13 }}>{(e.tipos || []).join(', ')}</td>
                   <td>
                     <div className="ib" onClick={() => navigate(`/estoque/${e.id}/edit`)}>
                       <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" /></svg>
@@ -188,7 +188,7 @@ function EstoqueForm() {
               <label>Compatível com</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 8 }}>
                 {TIPOS_EST.map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
                     <input type="checkbox" checked={tipos.includes(t)} onChange={() => toggleTipo(t)} />
                     {TIPO_LABELS[t] || t}
                   </label>
@@ -196,7 +196,7 @@ function EstoqueForm() {
               </div>
             </div>
           </div>
-          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
           <div className="factions">
             <button className="btn btn-g" onClick={() => navigate('/estoque')}>Cancelar</button>
             {editId && <button className="btn" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: '1px solid rgba(239,68,68,.3)' }} onClick={del}>Excluir</button>}
