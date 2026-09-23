@@ -2,6 +2,60 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
+// Gráfico de barras vertical em SVG puro
+function BarChart({ data }: { data: { label: string; value: number }[] }) {
+  const max = Math.max(...data.map(d => d.value), 1)
+  const W = 60, H = 160
+  return (
+    <svg viewBox={`0 0 ${data.length * W} ${H + 40}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label="Faturamento por mês">
+      {data.map((d, i) => {
+        const h = Math.round(d.value / max * H)
+        return (
+          <g key={d.label}>
+            <rect x={i * W + 12} y={H - h + 16} width={W - 24} height={Math.max(h, 2)} rx={5} fill="var(--or)" opacity={i === data.length - 1 ? 1 : .55} />
+            <text x={i * W + W / 2} y={H - h + 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--tx)">
+              {d.value ? d.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''}
+            </text>
+            <text x={i * W + W / 2} y={H + 34} textAnchor="middle" fontSize="12" fill="var(--tx2)">{d.label}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+// Gráfico de rosca em SVG puro: cada fatia é um arco com stroke-dasharray
+function Donut({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((a, d) => a + d.value, 0)
+  const R = 60, C = 2 * Math.PI * R
+  let acc = 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <svg viewBox="0 0 160 160" width={160} height={160} role="img" aria-label="OS por status">
+        <circle cx={80} cy={80} r={R} fill="none" stroke="var(--bg3)" strokeWidth={22} />
+        {total > 0 && data.filter(d => d.value).map(d => {
+          const len = d.value / total * C
+          const el = <circle key={d.label} cx={80} cy={80} r={R} fill="none" stroke={d.color} strokeWidth={22}
+            strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-acc} transform="rotate(-90 80 80)" />
+          acc += len
+          return el
+        })}
+        <text x={80} y={78} textAnchor="middle" fontSize="26" fontWeight="800" fill="var(--tx)">{total}</text>
+        <text x={80} y={98} textAnchor="middle" fontSize="12" fill="var(--tx2)">OS</text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {data.map(d => (
+          <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+            <span style={{ width: 12, height: 12, borderRadius: 3, background: d.color, flexShrink: 0 }} />
+            <span style={{ color: 'var(--tx2)', flex: 1 }}>{d.label}</span>
+            <b>{d.value}</b>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Relatorios() {
   const [ordens, setOrdens] = useState<OrdemServico[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -56,6 +110,23 @@ export default function Relatorios() {
 
   void veiculos
 
+  // Faturamento das OS concluídas nos últimos 6 meses (inclui o atual)
+  const hoje = new Date()
+  const meses = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - 5 + i, 1)
+    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const value = done.filter(o => (o.data || '').startsWith(chave)).reduce((a, o) => a + (parseFloat(String(o.total)) || 0), 0)
+    return { label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''), value }
+  })
+
+  const porStatus = [
+    { label: 'Concluídas', value: done.length, color: 'var(--gn)' },
+    { label: 'Em andamento', value: ordens.filter(o => o.status === 'ANDAMENTO').length, color: 'var(--yw)' },
+    { label: 'Aguardando peça', value: ordens.filter(o => o.status === 'AGUARDANDO').length, color: 'var(--bl)' },
+    { label: 'Agendadas', value: sched.length, color: 'var(--vi)' },
+    { label: 'Canceladas', value: ordens.filter(o => o.status === 'CANCELADO').length, color: 'var(--rd)' },
+  ]
+
   return (
     <Layout title="Relatórios" pageId="relatorios" actions={actions}>
       <div className="metrics" style={{ marginBottom: 20 }}>
@@ -74,6 +145,17 @@ export default function Relatorios() {
       </div>
 
       <div className="g2">
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="chd"><div className="ctitle">Faturamento por mês (R$)</div><span style={{ fontSize: 13, color: 'var(--tx3)' }}>OS concluídas · últimos 6 meses</span></div>
+          <div className="cbd"><BarChart data={meses} /></div>
+        </div>
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="chd"><div className="ctitle">OS por status</div></div>
+          <div className="cbd"><Donut data={porStatus} /></div>
+        </div>
+      </div>
+
+      <div className="g2">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card">
             <div className="chd"><div className="ctitle">Resumo financeiro</div></div>
@@ -84,23 +166,6 @@ export default function Relatorios() {
                 ['Peças', fmtCur(pecOb), 'var(--or)'],
                 ['Ticket médio', fmtCur(ticket), 'var(--tx)'],
                 ['Em aberto (potencial)', fmtCur(revOp), 'var(--yw)'],
-              ].map(([l, v, c]) => (
-                <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--brd)' }}>
-                  <span style={{ fontSize: 14, color: 'var(--tx2)' }}>{l}</span>
-                  <span style={{ fontWeight: 700, color: c as string }}>{v}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="card">
-            <div className="chd"><div className="ctitle">Situação das OS</div></div>
-            <div className="cbd">
-              {[
-                ['Concluídas', done.length, 'var(--gn)'],
-                ['Em andamento', open.filter(o => o.status === 'ANDAMENTO').length, 'var(--yw)'],
-                ['Aguardando peça', open.filter(o => o.status === 'AGUARDANDO').length, 'var(--bl)'],
-                ['Agendadas', sched.length, 'var(--or)'],
-                ['Total', ordens.length, 'var(--tx)'],
               ].map(([l, v, c]) => (
                 <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--brd)' }}>
                   <span style={{ fontSize: 14, color: 'var(--tx2)' }}>{l}</span>
