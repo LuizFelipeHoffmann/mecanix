@@ -1,0 +1,11 @@
+﻿target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+node_modules/
+.env
+apache-maven-3.9.16/
+.claude
+.vscode

@@ -1,0 +1,87 @@
+================================================================
+  MECANIX — Como rodar
+================================================================
+
+REQUISITOS (instale antes, uma vez só, em qualquer PC novo):
+  - Java JDK 21            → https://adoptium.net (Temurin 21)
+  - Node.js 20.19+ ou 22.12+ → https://nodejs.org
+  - PostgreSQL 16 (com pgAdmin) → https://www.postgresql.org/download/
+  - Git
+
+  IMPORTANTE: clone o projeto em um caminho SIMPLES, sem acento e sem
+  espaço (ex: C:\dev\mecanix). Evite clonar dentro do OneDrive ou de
+  pastas como "Área de Trabalho" — isso já causou erro de classpath
+  no backend (o Java não achava a classe principal por causa do
+  acento/espaço no caminho).
+
+================================================================
+PASSO 1 — Clone o projeto
+================================================================
+  git clone https://github.com/luizfelipehoffmann/mecanix.git C:\dev\mecanix
+  cd C:\dev\mecanix
+
+================================================================
+PASSO 2 — Crie o banco (só na primeira vez)
+================================================================
+  Abra o pgAdmin 4 → botão direito em "Databases" → Create → Database
+  Nome: mecanix_db → Save
+
+  OU pelo terminal (ajuste a senha do SEU Postgres):
+  $env:PATH += ";C:\Program Files\PostgreSQL\16\bin"
+  $env:PGPASSWORD = "sua_senha_do_postgres"
+  psql -U postgres -h 127.0.0.1 -p 5432 -d postgres -c "CREATE DATABASE mecanix_db"
+
+================================================================
+PASSO 3 — Suba o backend (Java)
+================================================================
+  Abra um terminal no VS Code, na raiz do projeto, e cole (ajustando
+  os valores marcados):
+
+  cd backend
+  $env:JAVA_HOME = "C:\Caminho\Para\Seu\jdk-21.x.x-hotspot"   # <- ajuste pro seu JDK 21
+  $env:PATH = "$env:JAVA_HOME\bin;" + $env:PATH
+  $env:PATH += ";$PWD\..\apache-maven-3.9.16\bin"
+  $env:DB_PASSWORD = "sua_senha_do_postgres"
+  $env:MAIL_USERNAME = "seu_email@gmail.com"
+  $env:MAIL_PASSWORD = "sua_senha_de_app_do_gmail"
+  mvn spring-boot:run
+
+  Aguarde aparecer:
+  ╔══════════════════════════════════════════╗
+  ║  MECANIX iniciado! (perfil: dev)         ║
+  ║  Login: admin@mecanix.com / admin123     ║
+  ╚══════════════════════════════════════════╝
+
+  NÃO feche essa janela — o backend precisa ficar rodando.
+
+  Dica 1: erro "mvn não reconhecido"? O Maven já vem dentro do
+  projeto, em apache-maven-3.9.16\bin — não precisa instalar
+  separado, só garantir que está no PATH (comando acima já faz isso).
+
+  Dica 2: erro do PowerShell bloqueando scripts (npm/mvn)? Rode uma
+  vez, aceitando com "S":
+  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+  Dica 3: MAIL_USERNAME/MAIL_PASSWORD só precisam ser reais se você for
+  testar o envio de e-mail. Pra só rodar o sistema, qualquer valor
+  serve (o backend não inicia sem essas variáveis definidas, mesmo
+  que não sejam usadas).
+
+================================================================
+PASSO 4 — Suba o front-end (em outro terminal, sem fechar o do backend)
+================================================================
+  cd frontend
+  npm install
+  npm run dev
+
+  Abra no navegador o link que aparecer, algo como:
+  http://localhost:5173/
+
+================================================================
+LOGINS DE TESTE
+================================================================
+  admin@mecanix.com    / admin123   (acesso total)
+  servicos@mecanix.com / serv123    (atendimento)
+  estoque@mecanix.com  / est123     (estoque)
+
+================================================================
