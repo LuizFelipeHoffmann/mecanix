@@ -82,13 +82,15 @@ body { background:var(--bg); color:var(--tx); font-family:system-ui,-apple-syste
 .met:hover, .met:active { box-shadow:0 6px 18px rgba(15,17,23,.10); transform:translateY(-1px); }
 .mlbl { font-size:12px; color:var(--tx2); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; font-weight:600; padding-right:40px; }
 .mval { font-size:26px; font-weight:800; color:var(--mac); line-height:1; }
+.mval.money { font-size:20px; }
 .msub { font-size:13px; color:var(--tx2); margin-top:4px; }
 .mico { position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:var(--mac); }
 .mico svg { width:18px; height:18px; fill:#fff; }
 
 /* ── TABLES ── */
 .tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:0 14px; }
-.tbl { width:100%; border-collapse:collapse; min-width:400px; }
+.tbl { width:100%; border-collapse:collapse; }
+.tbl-wrap .tbl { min-width:400px; }
 .tbl th { text-align:left; font-size:12px; color:var(--tx3); text-transform:uppercase; letter-spacing:.7px; padding:0 8px 9px; border-bottom:1px solid var(--brd); white-space:nowrap; }
 .tbl td { padding:11px 8px; font-size:14px; border-bottom:1px solid var(--brd); }
 .tbl tr:last-child td { border-bottom:none; }
@@ -237,3 +239,18 @@ textarea.finp { min-height:80px; resize:vertical; font-size:14px; }
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar { width:4px; height:4px; }
 ::-webkit-scrollbar-thumb { background:var(--brd); border-radius:2px; }
+
+/* ── MOBILE (celular) ── */
+.item-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding-bottom:8px; border-bottom:1px solid var(--brd); margin-bottom:8px; }
+@media(max-width:480px) {
+  .ptitle { font-size:17px; }
+  .topbar { padding:10px 12px; gap:8px; }
+  .topbar .btn { padding:7px 10px; }
+  .mval { font-size:22px; }
+  .mval.money { font-size:16px; }
+  .mlbl { font-size:11px; }
+  .finp { font-size:16px; }               /* evita o zoom automático do iOS ao focar o campo */
+  .ib { width:40px; height:40px; }        /* área de toque maior */
+  .item-row > :first-child { flex-basis:100%; }
+  .chd input[type=search] { width:100% !important; }
+}

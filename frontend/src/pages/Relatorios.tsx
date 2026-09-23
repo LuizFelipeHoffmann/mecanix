@@ -138,7 +138,7 @@ export default function Relatorios() {
         ].map(m => (
           <div key={m.lbl} className="met" style={{ '--mac': m.mac, '--macd': m.bg } as React.CSSProperties}>
             <div className="mlbl">{m.lbl}</div>
-            <div className="mval" style={{ fontSize: 20 }}>{m.val}</div>
+            <div className="mval money">{m.val}</div>
             <div className="msub">{m.sub}</div>
           </div>
         ))}

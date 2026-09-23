@@ -245,8 +245,8 @@ function OSForm() {
         </div>
         <div className="cbd">
           {svcs.length ? svcs.map((s, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid var(--brd)', marginBottom: 8 }}>
-              <input className="finp" type="text" placeholder="Descrição do serviço" style={{ flex: 2 }} value={s.d} onChange={e => updateSvc(i, 'd', e.target.value)} />
+            <div key={i} className="item-row">
+              <input className="finp" type="text" placeholder="Descrição do serviço" style={{ flex: 2, minWidth: 0 }} value={s.d} onChange={e => updateSvc(i, 'd', e.target.value)} />
               <input className="finp" type="number" placeholder="Valor R$" style={{ width: 120, flexShrink: 0 }} step={0.01} value={s.v || ''} onChange={e => updateSvc(i, 'v', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removeSvc(i)}>×</button>
             </div>
@@ -262,7 +262,7 @@ function OSForm() {
         </div>
         <div className="cbd">
           {pecas.length ? pecas.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', paddingBottom: 8, borderBottom: '1px solid var(--brd)', marginBottom: 8 }}>
+            <div key={i} className="item-row">
               <select className="finp" style={{ flex: 2, minWidth: 160 }} value={p.id || ''} onChange={e => selectPeca(i, e.target.value)}>
                 <option value="">Selecione...</option>
                 {estoqueCache.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
