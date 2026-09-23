@@ -71,6 +71,8 @@ export interface OrdemServico {
   mecanico?: string;
   data?: string;
   observacoes?: string;
+  dataPagamento?: string;
+  formaPagamento?: string;
   servicos?: Servico[];
   pecas?: Peca[];
   total: number;
@@ -84,6 +86,7 @@ export interface DashboardData {
   totalClientes: number;
   faturamentoConcluido: number;
   ticketMedio: number;
+  valorAReceber: number;
 }
 
 async function apiFetch<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -141,7 +144,9 @@ export const ordensAPI = {
   criar:     (dados: unknown) => apiFetch<OrdemServico>('POST', '/ordens', dados),
   atualizar: (id: number, dados: unknown) => apiFetch<OrdemServico>('PUT', `/ordens/${id}`, dados),
   deletar:   (id: number) => apiFetch<void>('DELETE', `/ordens/${id}`),
-  enviarEmail: (id: number) => apiFetch<void>('POST', `/ordens/${id}/enviar-email`),
+  enviarEmail: (id: number) => apiFetch<{ msg: string }>('POST', `/ordens/${id}/enviar-email`),
+  darBaixa:  (id: number, formaPagamento: string) => apiFetch<OrdemServico>('PUT', `/ordens/${id}/pagamento`, { formaPagamento }),
+  estornar:  (id: number) => apiFetch<OrdemServico>('DELETE', `/ordens/${id}/pagamento`),
 };
 
 export const estoqueAPI = {
@@ -203,6 +208,10 @@ export const STATUS_BADGE: Record<string, string> = {
   CONCLUIDO:  'bgn',
   AGENDADO:   'bgy',
   CANCELADO:  'brd2',
+};
+
+export const FORMA_PAGAMENTO_LABELS: Record<string, string> = {
+  DINHEIRO: 'Dinheiro', PIX: 'PIX', DEBITO: 'Cartão de débito', CREDITO: 'Cartão de crédito',
 };
 
 export const TIPO_LABELS: Record<string, string> = {

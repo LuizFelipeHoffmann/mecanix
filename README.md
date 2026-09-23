@@ -154,6 +154,7 @@ O menu do frontend ([Layout.tsx](frontend/src/components/Layout.tsx)) esconde as
 | `GET` | `/api/ordens?status=` | Filtra por status |
 | `GET` `POST` | `/api/ordens` | Lista / cria |
 | `GET` `PUT` `DELETE` | `/api/ordens/{id}` | Busca / atualiza / remove |
+| `PUT` `DELETE` | `/api/ordens/{id}/pagamento` | Dá baixa (`{"formaPagamento":"PIX"}`) / estorna o pagamento |
 | `POST` | `/api/ordens/{id}/enviar-email` | Envia a OS por e-mail ao cliente |
 | `GET` | `/api/estoque/alertas` | Itens abaixo do mínimo |
 | `GET` | `/api/estoque?tipo=` | Peças compatíveis com um tipo de veículo |
@@ -171,6 +172,7 @@ Erros seguem um formato único `{status, erro, detalhes?, timestamp}` via [Globa
 - ✅ Ordens de Serviço com itens de serviço (mão de obra) e peças
 - ✅ **Baixa automática de estoque** ao lançar peças na OS, com estorno na edição e na exclusão
 - ✅ Bloqueio de OS com estoque insuficiente
+- ✅ **Baixa de pagamento** da OS (Dinheiro, PIX, débito, crédito) com status Pago/Pendente e estorno
 - ✅ Envio da OS por e-mail em HTML ([EmailService](backend/src/main/java/com/mecanix/service/EmailService.java))
 - ✅ Clientes com CPF único e validação de formato
 - ✅ Veículos com placa única, tipo (Sedan/Hatch/SUV/Pickup/Elétrico) e autocomplete de marca/modelo

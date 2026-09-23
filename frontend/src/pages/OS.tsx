@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
+import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
 function Badge({ status }: { status: string }) {
   return <span className={`badge ${STATUS_BADGE[status] || 'bgy'}`}><span className="bdot" />{STATUS_LABELS[status] || status}</span>
+}
+
+function PagtoBadge({ os }: { os: OrdemServico }) {
+  if (os.status === 'CANCELADO') return <span style={{ color: 'var(--tx3)' }}>—</span>
+  return os.dataPagamento
+    ? <span className="badge bgn"><span className="bdot" />Pago</span>
+    : <span className="badge brd2"><span className="bdot" />Pendente</span>
 }
 
 // ── LISTA ──
@@ -63,7 +70,7 @@ function OSList() {
         </div>
         <div className="tbl-wrap tbl-desktop">
           <table className="tbl">
-            <thead><tr><th>OS</th><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Mecânico</th><th>Status</th><th style={{ textAlign: 'right' }}>Total</th><th>Data</th></tr></thead>
+            <thead><tr><th>OS</th><th>Cliente</th><th>Veículo</th><th>Placa</th><th>Mecânico</th><th>Status</th><th>Pagamento</th><th style={{ textAlign: 'right' }}>Total</th><th>Data</th></tr></thead>
             <tbody>
               {filtradas.length ? filtradas.map(o => (
                 <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/os/${o.id}`)}>
@@ -73,10 +80,11 @@ function OSList() {
                   <td style={{ color: 'var(--tx2)' }}>{o.veiculoPlaca || '—'}</td>
                   <td style={{ color: 'var(--tx2)' }}>{o.mecanico || '—'}</td>
                   <td><Badge status={o.status} /></td>
+                  <td><PagtoBadge os={o} /></td>
                   <td style={{ fontWeight: 700, color: 'var(--or)', textAlign: 'right' }}>{fmtCur(o.total)}</td>
                   <td>{fmtDate(o.data)}</td>
                 </tr>
-              )) : <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>Nenhuma OS encontrada.</td></tr>}
+              )) : <tr><td colSpan={9} style={{ textAlign: 'center', color: 'var(--tx3)', padding: 24 }}>Nenhuma OS encontrada.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -86,7 +94,7 @@ function OSList() {
               <div className="mob-card-top"><span className="osnum">{osNum(o.id)}</span><Badge status={o.status} /></div>
               <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--tx)' }}>{o.clienteNome || '—'}</div>
               <div style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 6 }}>{o.veiculoDesc || '—'} · {o.veiculoPlaca || '—'}</div>
-              <div style={{ fontWeight: 700, color: 'var(--or)' }}>{fmtCur(o.total)}</div>
+              <div className="mob-card-row"><span style={{ fontWeight: 700, color: 'var(--or)' }}>{fmtCur(o.total)}</span><PagtoBadge os={o} /></div>
             </div>
           ))}
         </div>
@@ -291,6 +299,19 @@ function OSDetail() {
   const [loading, setLoading] = useState(true)
   const [emailSending, setEmailSending] = useState(false)
   const [emailDone, setEmailDone] = useState(false)
+  const [forma, setForma] = useState('PIX')
+
+  async function darBaixa() {
+    if (!confirm(`Confirmar recebimento de ${fmtCur(os?.total)} via ${FORMA_PAGAMENTO_LABELS[forma]}?`)) return
+    try { setOs(await ordensAPI.darBaixa(osId, forma)) }
+    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+  }
+
+  async function estornar() {
+    if (!confirm('Estornar o pagamento desta OS? Ela voltará a ficar pendente.')) return
+    try { setOs(await ordensAPI.estornar(osId)) }
+    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+  }
 
   useEffect(() => {
     ordensAPI.buscar(osId).then(setOs).finally(() => setLoading(false))
@@ -401,6 +422,32 @@ function OSDetail() {
           </div>
         </div>
       </div>
+
+      {os.status !== 'CANCELADO' && (
+        <div className="card">
+          <div className="chd">
+            <div className="ctitle">Pagamento</div>
+            <PagtoBadge os={os} />
+          </div>
+          <div className="cbd">
+            {os.dataPagamento ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ color: 'var(--tx2)' }}>
+                  Recebido em <b style={{ color: 'var(--tx)' }}>{fmtDate(os.dataPagamento)}</b> via <b style={{ color: 'var(--tx)' }}>{FORMA_PAGAMENTO_LABELS[os.formaPagamento || ''] || os.formaPagamento}</b>
+                </div>
+                <button className="btn btn-g sm" onClick={estornar}>↩ Estornar pagamento</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select className="finp" style={{ width: 'auto', flex: '1 1 180px' }} value={forma} onChange={e => setForma(e.target.value)}>
+                  {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+                <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none', padding: '10px 16px' }} onClick={darBaixa}>💰 Dar baixa de {fmtCur(os.total)}</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

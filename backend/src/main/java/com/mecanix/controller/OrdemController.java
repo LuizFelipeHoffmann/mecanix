@@ -49,6 +49,16 @@ public class OrdemController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/pagamento")
+    public OrdemResponse darBaixaPagamento(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return service.darBaixaPagamento(id, body.get("formaPagamento"));
+    }
+
+    @DeleteMapping("/{id}/pagamento")
+    public OrdemResponse estornarPagamento(@PathVariable Long id) {
+        return service.estornarPagamento(id);
+    }
+
     @PostMapping("/{id}/enviar-email")
     public ResponseEntity<Map<String, String>> enviarEmail(@PathVariable Long id) {
         OrdemResponse os = service.buscarPorId(id);
