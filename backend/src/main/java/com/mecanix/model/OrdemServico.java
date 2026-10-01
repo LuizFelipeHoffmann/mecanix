@@ -43,6 +43,12 @@ public class OrdemServico {
     @Column(length = 500)
     private String observacoes;
 
+    // Baixa de pagamento: preenchida quando o cliente paga. Nula = pendente.
+    private LocalDate dataPagamento;
+
+    @Column(length = 20)
+    private String formaPagamento;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime criadoEm;
@@ -80,6 +86,8 @@ public class OrdemServico {
     public String getMecanico() { return mecanico; }
     public LocalDate getData() { return data; }
     public String getObservacoes() { return observacoes; }
+    public LocalDate getDataPagamento() { return dataPagamento; }
+    public String getFormaPagamento() { return formaPagamento; }
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
     public List<ItemServico> getServicos() { return servicos; }
@@ -93,6 +101,8 @@ public class OrdemServico {
     public void setMecanico(String m) { this.mecanico = m; }
     public void setData(LocalDate d) { this.data = d; }
     public void setObservacoes(String o) { this.observacoes = o; }
+    public void setDataPagamento(LocalDate d) { this.dataPagamento = d; }
+    public void setFormaPagamento(String f) { this.formaPagamento = f; }
     public void setServicos(List<ItemServico> s) { this.servicos = s; }
     public void setPecas(List<ItemPeca> p) { this.pecas = p; }
 }

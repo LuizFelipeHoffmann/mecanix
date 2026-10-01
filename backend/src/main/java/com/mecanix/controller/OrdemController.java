@@ -51,6 +51,16 @@ public class OrdemController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/pagamento")
+    public OrdemResponse darBaixaPagamento(@PathVariable Long id, @RequestBody Map<String, String> body, HttpServletRequest req) {
+        return service.darBaixaPagamento(id, body.get("formaPagamento"), SessionUtil.empresaId(req));
+    }
+
+    @DeleteMapping("/{id}/pagamento")
+    public OrdemResponse estornarPagamento(@PathVariable Long id, HttpServletRequest req) {
+        return service.estornarPagamento(id, SessionUtil.empresaId(req));
+    }
+
     @PostMapping("/{id}/enviar-email")
     public ResponseEntity<Map<String, String>> enviarEmail(@PathVariable Long id, HttpServletRequest req) {
         OrdemResponse os = service.buscarPorId(id, SessionUtil.empresaId(req));
@@ -58,7 +68,8 @@ public class OrdemController {
             throw new BusinessException("O cliente não possui e-mail cadastrado");
         try {
             emailService.enviarOS(os, os.getClienteEmail());
-            return ResponseEntity.ok(Map.of("msg", "E-mail enviado para " + os.getClienteEmail()));
+            return ResponseEntity.ok(Map.of("msg", "E-mail enviado para " + os.getClienteEmail(),
+                "remetente", emailService.getRemetente()));
         } catch (Exception e) {
             throw new BusinessException("Erro ao enviar e-mail: " + e.getMessage());
         }

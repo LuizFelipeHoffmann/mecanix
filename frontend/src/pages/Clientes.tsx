@@ -37,7 +37,7 @@ function ClienteList() {
             placeholder="Buscar por nome, CPF, telefone, e-mail..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 13, outline: 'none', width: 'min(100%, 320px)' }}
+            style={{ background: 'var(--bg3)', border: '1px solid var(--brd)', borderRadius: 8, color: 'var(--tx)', padding: '6px 11px', fontSize: 14, outline: 'none', width: 'min(100%, 320px)' }}
           />
         </div>
         <div className="tbl-wrap tbl-desktop">
@@ -148,7 +148,7 @@ function ClienteForm() {
               <input className="finp" type="text" placeholder="Rua, número, bairro, cidade - UF" value={endereco} onChange={e => setEndereco(e.target.value)} />
             </div>
           </div>
-          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
+          {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}
           <div className="factions">
             <button className="btn btn-g" onClick={() => navigate('/clientes')}>Cancelar</button>
             <button className="btn btn-p" disabled={saving} onClick={save}>{saving ? 'Salvando...' : editId ? 'Salvar' : 'Cadastrar'}</button>
@@ -169,12 +169,12 @@ function ClienteForm() {
                 <div key={v.id} className="mob-card" style={{ cursor: 'pointer' }} onClick={() => navigate(`/veiculos/${v.id}/edit`)}>
                   <div className="mob-card-top">
                     <span className="osnum">{v.placa}</span>
-                    <span style={{ background: col + '22', color: col, fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5 }}>{TIPO_LABELS[v.tipo] || v.tipo}</span>
+                    <span style={{ background: col + '22', color: col, fontSize: 12, fontWeight: 600, padding: '3px 8px', borderRadius: 5 }}>{TIPO_LABELS[v.tipo] || v.tipo}</span>
                   </div>
                   <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--tx)' }}>{v.marca} {v.modelo} {v.ano || ''} {v.cor ? `· ${v.cor}` : ''}</div>
                 </div>
               )
-            }) : <div style={{ color: 'var(--tx3)', fontSize: 12 }}>Nenhum veículo cadastrado para este cliente.</div>}
+            }) : <div style={{ color: 'var(--tx3)', fontSize: 13 }}>Nenhum veículo cadastrado para este cliente.</div>}
           </div>
         </div>
       )}

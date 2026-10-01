@@ -11,6 +11,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -141,6 +142,30 @@ public class OrdemServicoService {
         ordemRepo.delete(o);
     }
 
+    private static final Set<String> FORMAS_PAGAMENTO = Set.of("DINHEIRO", "PIX", "DEBITO", "CREDITO");
+
+    @Transactional
+    public OrdemResponse darBaixaPagamento(Long id, String forma, Long empresaId) {
+        OrdemServico o = ordemRepo.findByIdAndEmpresaId(id, empresaId)
+            .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+        if (o.getStatus() == OrdemServico.StatusOS.CANCELADO)
+            throw new BusinessException("Não é possível dar baixa em OS cancelada");
+        if (forma == null || !FORMAS_PAGAMENTO.contains(forma))
+            throw new BusinessException("Forma de pagamento inválida");
+        o.setDataPagamento(LocalDate.now());
+        o.setFormaPagamento(forma);
+        return toResponse(ordemRepo.save(o));
+    }
+
+    @Transactional
+    public OrdemResponse estornarPagamento(Long id, Long empresaId) {
+        OrdemServico o = ordemRepo.findByIdAndEmpresaId(id, empresaId)
+            .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+        o.setDataPagamento(null);
+        o.setFormaPagamento(null);
+        return toResponse(ordemRepo.save(o));
+    }
+
     public DashboardResponse getDashboard(Long empresaId) {
         List<OrdemServico> todas = ordemRepo.findByEmpresaId(empresaId);
         List<OrdemServico> concluidas = todas.stream()
@@ -156,6 +181,9 @@ public class OrdemServicoService {
         r.setTotalClientes(cliRepo.countByEmpresaId(empresaId));
         r.setFaturamentoConcluido(fat);
         r.setTicketMedio(ticket);
+        BigDecimal aReceber = BigDecimal.ZERO;
+        for (OrdemServico o : concluidas) if (o.getDataPagamento() == null) aReceber = aReceber.add(o.getTotal());
+        r.setValorAReceber(aReceber);
         return r;
     }
 
@@ -172,6 +200,8 @@ public class OrdemServicoService {
         r.setMecanico(o.getMecanico());
         r.setData(o.getData());
         r.setObservacoes(o.getObservacoes());
+        r.setDataPagamento(o.getDataPagamento());
+        r.setFormaPagamento(o.getFormaPagamento());
         List<ItemServicoResponse> svcs = new ArrayList<>();
         for (ItemServico s : o.getServicos()) {
             ItemServicoResponse sr = new ItemServicoResponse();

@@ -1,7 +1,8 @@
 package com.mecanix.dto;
 import java.math.BigDecimal;
 public class DashboardResponse {
-    private long ordensAbertas,ordensConcluidas,totalClientes; private BigDecimal faturamentoConcluido,ticketMedio;
+    private long ordensAbertas,ordensConcluidas,totalClientes; private BigDecimal faturamentoConcluido,ticketMedio,valorAReceber;
+    public BigDecimal getValorAReceber(){return valorAReceber;} public void setValorAReceber(BigDecimal v){this.valorAReceber=v;}
     public long getOrdensAbertas(){return ordensAbertas;} public void setOrdensAbertas(long v){this.ordensAbertas=v;}
     public long getOrdensConcluidas(){return ordensConcluidas;} public void setOrdensConcluidas(long v){this.ordensConcluidas=v;}
     public long getTotalClientes(){return totalClientes;} public void setTotalClientes(long v){this.totalClientes=v;}

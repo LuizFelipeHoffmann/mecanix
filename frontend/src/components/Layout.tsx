@@ -121,8 +121,8 @@ export default function Layout({ title, pageId, actions, children }: LayoutProps
             <div className="u-r">
               <div className="ava">{user.iniciais || '??'}</div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.nome}</div>
-                <div style={{ fontSize: 11, color: ROLE_COLORS[user.perfil] || 'var(--or)' }}>{ROLE_LABELS[user.perfil] || user.perfil}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.nome}</div>
+                <div style={{ fontSize: 12, color: ROLE_COLORS[user.perfil] || 'var(--or)' }}>{ROLE_LABELS[user.perfil] || user.perfil}</div>
               </div>
               <div style={{ marginLeft: 'auto', cursor: 'pointer', color: 'var(--tx3)', padding: 6 }} onClick={handleLogout} title="Sair">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
