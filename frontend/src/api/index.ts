@@ -2,10 +2,23 @@ const API_BASE = 'http://localhost:8080/api';
 
 export interface User {
   id: number;
+  empresaId: number;
   nome: string;
   email: string;
   perfil: 'ADMIN' | 'SERVICOS' | 'ESTOQUE';
   iniciais: string;
+}
+
+export interface CadastroRequest {
+  nomeFantasia: string;
+  razaoSocial: string;
+  cnpj: string;
+  telefoneEmpresa?: string;
+  enderecoEmpresa?: string;
+  aceiteTermos: boolean;
+  nomeUsuario: string;
+  emailUsuario: string;
+  senha: string;
 }
 
 export interface Cliente {
@@ -112,9 +125,10 @@ async function apiFetch<T>(method: string, path: string, body?: unknown): Promis
 }
 
 export const authAPI = {
-  login:  (email: string, senha: string) => apiFetch<User>('POST', '/auth/login', { email, senha }),
-  logout: () => apiFetch<void>('POST', '/auth/logout'),
-  me:     () => apiFetch<User>('GET', '/auth/me'),
+  login:   (email: string, senha: string) => apiFetch<User>('POST', '/auth/login', { email, senha }),
+  cadastro: (dados: CadastroRequest) => apiFetch<User>('POST', '/auth/cadastro', dados),
+  logout:  () => apiFetch<void>('POST', '/auth/logout'),
+  me:      () => apiFetch<User>('GET', '/auth/me'),
 };
 
 export const clientesAPI = {
@@ -164,7 +178,7 @@ export function osNum(id: number) {
 }
 
 export function fmtCur(v: number | string | null | undefined) {
-  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
 
 export function fmtDate(d: string | null | undefined) {
@@ -187,6 +201,15 @@ export function maskPlate(value: string): string {
   if (v.length >= 5 && /[A-Z]/.test(v[4])) return v;
   if (v.length > 3) return v.slice(0,3) + '-' + v.slice(3);
   return v;
+}
+
+export function maskCnpj(value: string): string {
+  const v = value.replace(/\D/g, '').slice(0, 14);
+  if (v.length <= 2)  return v;
+  if (v.length <= 5)  return v.slice(0,2) + '.' + v.slice(2);
+  if (v.length <= 8)  return v.slice(0,2) + '.' + v.slice(2,5) + '.' + v.slice(5);
+  if (v.length <= 12) return v.slice(0,2) + '.' + v.slice(2,5) + '.' + v.slice(5,8) + '/' + v.slice(8);
+  return v.slice(0,2) + '.' + v.slice(2,5) + '.' + v.slice(5,8) + '/' + v.slice(8,12) + '-' + v.slice(12);
 }
 
 export const STATUS_LABELS: Record<string, string> = {

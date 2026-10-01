@@ -1,15 +1,17 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import { type User, getUser, setUser as saveUser, clearUser, authAPI } from '../api'
+import { type User, type CadastroRequest, getUser, setUser as saveUser, clearUser, authAPI } from '../api'
 
 interface AuthContextType {
   user: User | null
   login: (email: string, senha: string) => Promise<void>
+  cadastrar: (dados: CadastroRequest) => Promise<void>
   logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => {},
+  cadastrar: async () => {},
   logout: async () => {},
 })
 
@@ -22,6 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u)
   }
 
+  async function cadastrar(dados: CadastroRequest) {
+    const u = await authAPI.cadastro(dados)
+    saveUser(u!)
+    setUser(u)
+  }
+
   async function logout() {
     try { await authAPI.logout() } catch {}
     clearUser()
@@ -29,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, cadastrar, logout }}>
       {children}
     </AuthContext.Provider>
   )

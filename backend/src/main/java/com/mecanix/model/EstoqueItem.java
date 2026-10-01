@@ -2,10 +2,11 @@ package com.mecanix.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.Set;
-@Entity @Table(name="estoque")
+@Entity @Table(name="estoque", uniqueConstraints = @UniqueConstraint(columnNames = {"empresa_id", "codigo"}))
 public class EstoqueItem {
     @Id @GeneratedValue(strategy=GenerationType.IDENTITY) private Long id;
-    @Column(nullable=false,unique=true,length=20) private String codigo;
+    @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="empresa_id",nullable=false) private Empresa empresa;
+    @Column(nullable=false,length=20) private String codigo;
     @Column(nullable=false,length=120) private String nome;
     @Column(length=40) private String categoria;
     @Column(nullable=false) private Integer quantidade;
@@ -16,11 +17,11 @@ public class EstoqueItem {
         uniqueConstraints=@UniqueConstraint(columnNames={"estoque_id","tipo"}))
     @Column(name="tipo",length=20) private Set<String> tipos;
     public boolean isAbaixoMinimo(){return quantidade<quantidadeMinima;}
-    public Long getId(){return id;} public String getCodigo(){return codigo;}
+    public Long getId(){return id;} public Empresa getEmpresa(){return empresa;} public String getCodigo(){return codigo;}
     public String getNome(){return nome;} public String getCategoria(){return categoria;}
     public Integer getQuantidade(){return quantidade;} public Integer getQuantidadeMinima(){return quantidadeMinima;}
     public BigDecimal getPrecoUnitario(){return precoUnitario;} public Set<String> getTipos(){return tipos;}
-    public void setId(Long id){this.id=id;} public void setCodigo(String c){this.codigo=c;}
+    public void setId(Long id){this.id=id;} public void setEmpresa(Empresa e){this.empresa=e;} public void setCodigo(String c){this.codigo=c;}
     public void setNome(String n){this.nome=n;} public void setCategoria(String c){this.categoria=c;}
     public void setQuantidade(Integer q){this.quantidade=q;} public void setQuantidadeMinima(Integer q){this.quantidadeMinima=q;}
     public void setPrecoUnitario(BigDecimal p){this.precoUnitario=p;} public void setTipos(Set<String> t){this.tipos=t;}

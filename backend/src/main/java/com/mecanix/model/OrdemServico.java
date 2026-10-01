@@ -19,6 +19,10 @@ public class OrdemServico {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 
@@ -69,6 +73,7 @@ public class OrdemServico {
     public BigDecimal getTotal() { return getTotalServicos().add(getTotalPecas()); }
 
     public Long getId() { return id; }
+    public Empresa getEmpresa() { return empresa; }
     public Cliente getCliente() { return cliente; }
     public Veiculo getVeiculo() { return veiculo; }
     public StatusOS getStatus() { return status; }
@@ -81,6 +86,7 @@ public class OrdemServico {
     public List<ItemPeca> getPecas() { return pecas; }
 
     public void setId(Long id) { this.id = id; }
+    public void setEmpresa(Empresa e) { this.empresa = e; }
     public void setCliente(Cliente c) { this.cliente = c; }
     public void setVeiculo(Veiculo v) { this.veiculo = v; }
     public void setStatus(StatusOS s) { this.status = s; }

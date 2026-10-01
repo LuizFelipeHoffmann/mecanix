@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
+import Cadastro from './pages/Cadastro'
 import Dashboard from './pages/Dashboard'
 import Clientes from './pages/Clientes'
 import Veiculos from './pages/Veiculos'
@@ -18,6 +19,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/os/*" element={<PrivateRoute><OS /></PrivateRoute>} />
       <Route path="/clientes/*" element={<PrivateRoute><Clientes /></PrivateRoute>} />

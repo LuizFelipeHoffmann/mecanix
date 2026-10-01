@@ -220,8 +220,8 @@ textarea.finp { min-height:80px; resize:vertical; font-size:14px; }
 .toast-body { font-size:12px; color:var(--tx2); line-height:1.5; }
 
 /* ── LOGIN ── */
-.lw { display:flex; align-items:center; justify-content:center; min-height:100dvh; background:var(--bg); padding:16px; overflow:auto; }
-.lbox { background:var(--bg2); border:1px solid var(--brd); border-radius:16px; padding:32px 28px; width:100%; max-width:380px; }
+.lw { display:flex; justify-content:center; height:100dvh; background:var(--bg); padding:16px; overflow-y:auto; }
+.lbox { background:var(--bg2); border:1px solid var(--brd); border-radius:16px; padding:32px 28px; width:100%; max-width:380px; margin:auto 0; }
 .llogo { text-align:center; margin-bottom:28px; }
 .lico { width:56px; height:56px; background:var(--or); border-radius:15px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
 .lico svg { width:28px; height:28px; fill:#000; }
