@@ -88,13 +88,16 @@ export default function Relatorios() {
 
   const svcMap: Record<string, number> = {}
   ordens.forEach(o => (o.servicos || []).forEach(s => {
-    const k = (s.descricao || '').trim().toLowerCase()
-    const cat = k.includes('óleo') || k.includes('oleo') ? 'Troca de óleo'
+    // compara sem acentos: "Diagnóstico" e "diagnostico" caem na mesma categoria
+    const k = (s.descricao || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    const cat = k.includes('oleo') ? 'Troca de óleo'
       : k.includes('frei') ? 'Serviço de freios'
-      : k.includes('elétri') ? 'Elétrica'
+      : k.includes('eletri') ? 'Elétrica'
       : k.includes('suspens') || k.includes('amort') ? 'Suspensão'
       : k.includes('alinha') ? 'Alinhamento'
       : k.includes('diagnos') ? 'Diagnóstico'
+      : k.includes('correia') || k.includes('embreag') || k.includes('vela') ? 'Motor'
+      : k.includes('revis') ? 'Revisão'
       : 'Outros'
     svcMap[cat] = (svcMap[cat] || 0) + 1
   }))
