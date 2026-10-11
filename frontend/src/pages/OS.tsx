@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
+import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, TIPO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
 function Badge({ status }: { status: string }) {
   return <span className={`badge ${STATUS_BADGE[status] || 'bgy'}`}><span className="bdot" />{STATUS_LABELS[status] || status}</span>
@@ -180,6 +180,12 @@ function OSForm() {
   const totalSvcs = svcs.reduce((a, s) => a + (parseFloat(String(s.v)) || 0), 0)
   const totalPecas = pecas.reduce((a, p) => a + (parseFloat(String(p.preco)) || 0) * (parseInt(String(p.qtd)) || 1), 0)
 
+  // Só oferece peças compatíveis com o tipo do veículo (peça sem tipo cadastrado serve
+  // para qualquer um) e mantém na lista as que já foram lançadas nesta OS
+  const tipoVeiculo = veiculos.find(v => String(v.id) === veiculoId)?.tipo
+  const pecasCompativeis = estoqueCache.filter(e =>
+    !tipoVeiculo || !e.tipos?.length || e.tipos.includes(tipoVeiculo) || pecas.some(p => p.id === e.id))
+
   async function save() {
     if (!clienteId) { setError('Selecione o cliente'); return }
     if (!veiculoId) { setError('Selecione o veículo'); return }
@@ -261,11 +267,16 @@ function OSForm() {
           <button className="btn btn-g sm" onClick={addPeca}>+ Adicionar peça</button>
         </div>
         <div className="cbd">
+          {tipoVeiculo && (
+            <div className={`compat-info${tipoVeiculo === 'ELETRICO' ? ' electric' : ''}`}>
+              <span>Mostrando as peças compatíveis com veículos do tipo <b>{TIPO_LABELS[tipoVeiculo] || tipoVeiculo}</b>.</span>
+            </div>
+          )}
           {pecas.length ? pecas.map((p, i) => (
             <div key={i} className="item-row">
               <select className="finp" style={{ flex: 2, minWidth: 160 }} value={p.id || ''} onChange={e => selectPeca(i, e.target.value)}>
                 <option value="">Selecione...</option>
-                {estoqueCache.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
+                {pecasCompativeis.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
               </select>
               <input className="finp" type="number" placeholder="Qtd" style={{ width: 70, flexShrink: 0 }} min={1} value={p.qtd} onChange={e => updatePeca(i, 'qtd', parseInt(e.target.value) || 1)} />
               <input className="finp" type="number" placeholder="R$ unit." style={{ width: 110, flexShrink: 0 }} step={0.01} value={p.preco || ''} onChange={e => updatePeca(i, 'preco', parseFloat(e.target.value) || 0)} />
