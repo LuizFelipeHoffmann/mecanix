@@ -156,13 +156,13 @@ function OSForm() {
   }, [editId])
 
   async function onClienteChange(cid: string) {
-    setClienteId(cid); setVeiculoId(''); setVeiculos([])
-    if (!cid) return
+    setClienteId(cid); setVeiculoId('')
+    if (!cid) { setVeiculos([]); return }
     try {
       const vl = await veiculosAPI.listarPorCliente(parseInt(cid))
       setVeiculos(vl)
       if (vl.length) setVeiculoId(String(vl[0].id))
-    } catch {}
+    } catch { setVeiculos([]) }
   }
 
   function addSvc() { setSvcs(s => [...s, { d: '', v: 0 }]) }
@@ -245,8 +245,14 @@ function OSForm() {
             <div className="fg full">
               <label>Veículo *</label>
               <select className="finp" value={veiculoId} onChange={e => setVeiculoId(e.target.value)}>
-                {veiculos.length ? veiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo} {v.ano || ''}</option>) : <option value="">Selecione o cliente primeiro...</option>}
+                {veiculos.length ? veiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo} {v.ano || ''}</option>) : <option value="">{clienteId ? 'Cliente sem veículo cadastrado' : 'Selecione o cliente primeiro...'}</option>}
               </select>
+              {clienteId && !veiculos.length && (
+                <div className="lookup-row" style={{ color: 'var(--yw)', flexWrap: 'wrap' }}>
+                  Cadastre um veículo para este cliente antes de abrir a OS.
+                  <button className="btn btn-g sm" onClick={() => navigate(`/veiculos/new?clienteId=${clienteId}`)}>+ Cadastrar veículo</button>
+                </div>
+              )}
             </div>
             <div className="fg">
               <label>Status</label>
