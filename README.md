@@ -248,7 +248,7 @@ cd frontend && npm run build         # → dist/
 SPRING_PROFILES_ACTIVE=prod java -jar backend/target/mecanix-api-1.0.0.jar
 ```
 
-Antes de publicar, ajuste `API_BASE` em [frontend/src/api/index.ts](frontend/src/api/index.ts) e as origens de CORS em [WebConfig.java](backend/src/main/java/com/mecanix/config/WebConfig.java).
+Antes de publicar, defina a URL da API com a variável `VITE_API_URL` no build do front (padrão: `http://localhost:8080/api`, ver [frontend/src/api/index.ts](frontend/src/api/index.ts)) e ajuste as origens de CORS em [WebConfig.java](backend/src/main/java/com/mecanix/config/WebConfig.java).
 
 ---
 
