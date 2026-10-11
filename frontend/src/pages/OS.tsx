@@ -318,7 +318,8 @@ function OSDetail() {
   }, [osId])
 
   async function mudarStatus(novoStatus: string) {
-    if (!os || !confirm(`Alterar status para "${STATUS_LABELS[novoStatus]}"?`)) return
+    const aviso = novoStatus === 'CANCELADO' ? '\n\nAs peças voltam ao estoque e a OS não poderá ser reaberta.' : ''
+    if (!os || !confirm(`Alterar status para "${STATUS_LABELS[novoStatus]}"?${aviso}`)) return
     try {
       await ordensAPI.atualizar(osId, {
         clienteId: os.clienteId, veiculoId: os.veiculoId, status: novoStatus, mecanico: os.mecanico,
@@ -369,8 +370,10 @@ function OSDetail() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <Badge status={os.status} />
-            <button className="btn btn-g sm" onClick={() => navigate(`/os/${os.id}/edit`)}>✏️ Editar</button>
-            {os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CONCLUIDO')}>✅ Concluir</button>}
+            {os.status === 'CANCELADO'
+              ? <span style={{ fontSize: 13, color: 'var(--tx2)' }}>OS cancelada: peças devolvidas ao estoque</span>
+              : <button className="btn btn-g sm" onClick={() => navigate(`/os/${os.id}/edit`)}>✏️ Editar</button>}
+            {os.status !== 'CONCLUIDO' && os.status !== 'CANCELADO' && <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CONCLUIDO')}>✅ Concluir</button>}
             {os.status === 'ANDAMENTO' && <button className="btn sm" style={{ background: 'var(--bl)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('AGUARDANDO')}>⏸ Aguardar peça</button>}
             {os.status === 'AGUARDANDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>▶ Retomar</button>}
             {os.status !== 'CANCELADO' && os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--rd)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CANCELADO')}>✖ Cancelar</button>}

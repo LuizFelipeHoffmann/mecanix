@@ -47,33 +47,12 @@ public class OrdemServicoService {
             .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
         Veiculo v = veiRepo.findById(req.getVeiculoId())
             .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado"));
-        validarEstoque(req.getPecas());
 
         OrdemServico o = new OrdemServico();
         o.setCliente(c); o.setVeiculo(v); o.setStatus(req.getStatus());
         o.setMecanico(req.getMecanico()); o.setObservacoes(req.getObservacoes());
         o.setData(req.getData() != null ? req.getData() : LocalDate.now());
-
-        if (req.getServicos() != null) {
-            for (ItemServicoRequest s : req.getServicos()) {
-                ItemServico is = new ItemServico();
-                is.setOrdemServico(o); is.setDescricao(s.getDescricao()); is.setValor(s.getValor());
-                o.getServicos().add(is);
-            }
-        }
-        if (req.getPecas() != null) {
-            for (ItemPecaRequest p : req.getPecas()) {
-                EstoqueItem item = estRepo.findById(p.getEstoqueId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Peça não encontrada"));
-                ItemPeca ip = new ItemPeca();
-                ip.setOrdemServico(o); ip.setEstoqueItem(item); ip.setNomePeca(item.getNome());
-                ip.setQuantidade(p.getQuantidade());
-                ip.setPrecoUnitario(p.getPrecoUnitario() != null ? p.getPrecoUnitario() : item.getPrecoUnitario());
-                o.getPecas().add(ip);
-                item.setQuantidade(item.getQuantidade() - p.getQuantidade());
-                estRepo.save(item);
-            }
-        }
+        aplicarItens(o, req);
         return toResponse(ordemRepo.save(o));
     }
 
@@ -81,16 +60,10 @@ public class OrdemServicoService {
     public OrdemResponse atualizar(Long id, OrdemRequest req) {
         OrdemServico o = ordemRepo.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+        if (o.getStatus() == OrdemServico.StatusOS.CANCELADO)
+            throw new BusinessException("OS cancelada não pode ser alterada nem reaberta");
 
-        // Devolve peças ao estoque
-        for (ItemPeca p : o.getPecas()) {
-            if (p.getEstoqueItem() != null) {
-                p.getEstoqueItem().setQuantidade(p.getEstoqueItem().getQuantidade() + p.getQuantidade());
-                estRepo.save(p.getEstoqueItem());
-            }
-        }
-
-        validarEstoque(req.getPecas());
+        devolverPecas(o);
 
         Cliente c = cliRepo.findById(req.getClienteId())
             .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
@@ -103,7 +76,23 @@ public class OrdemServicoService {
         o.setObservacoes(req.getObservacoes());
         o.getServicos().clear();
         o.getPecas().clear();
+        aplicarItens(o, req);
+        return toResponse(ordemRepo.save(o));
+    }
 
+    @Transactional
+    public void deletar(Long id) {
+        OrdemServico o = ordemRepo.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+        devolverPecas(o);
+        ordemRepo.delete(o);
+    }
+
+    // Peças de OS cancelada não ficam baixadas: voltam ao estoque no cancelamento
+    // e não são baixadas de novo (OS cancelada não pode ser reaberta).
+    private void aplicarItens(OrdemServico o, OrdemRequest req) {
+        boolean baixarEstoque = o.getStatus() != OrdemServico.StatusOS.CANCELADO;
+        if (baixarEstoque) validarEstoque(req.getPecas());
         if (req.getServicos() != null) {
             for (ItemServicoRequest s : req.getServicos()) {
                 ItemServico is = new ItemServico();
@@ -120,24 +109,22 @@ public class OrdemServicoService {
                 ip.setQuantidade(p.getQuantidade());
                 ip.setPrecoUnitario(p.getPrecoUnitario() != null ? p.getPrecoUnitario() : item.getPrecoUnitario());
                 o.getPecas().add(ip);
-                item.setQuantidade(item.getQuantidade() - p.getQuantidade());
-                estRepo.save(item);
+                if (baixarEstoque) {
+                    item.setQuantidade(item.getQuantidade() - p.getQuantidade());
+                    estRepo.save(item);
+                }
             }
         }
-        return toResponse(ordemRepo.save(o));
     }
 
-    @Transactional
-    public void deletar(Long id) {
-        OrdemServico o = ordemRepo.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+    private void devolverPecas(OrdemServico o) {
+        if (o.getStatus() == OrdemServico.StatusOS.CANCELADO) return; // já devolvidas no cancelamento
         for (ItemPeca p : o.getPecas()) {
             if (p.getEstoqueItem() != null) {
                 p.getEstoqueItem().setQuantidade(p.getEstoqueItem().getQuantidade() + p.getQuantidade());
                 estRepo.save(p.getEstoqueItem());
             }
         }
-        ordemRepo.delete(o);
     }
 
     private static final Set<String> FORMAS_PAGAMENTO = Set.of("DINHEIRO", "PIX", "DEBITO", "CREDITO");
