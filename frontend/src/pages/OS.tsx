@@ -127,6 +127,7 @@ function OSForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [pecasOriginais, setPecasOriginais] = useState<Record<number, number>>({})
 
   useEffect(() => {
     Promise.all([clientesAPI.listar(), estoqueAPI.listar()]).then(async ([cls, est]) => {
@@ -137,6 +138,9 @@ function OSForm() {
         setData(os.data || new Date().toISOString().split('T')[0]); setObs(os.observacoes || '')
         setSvcs((os.servicos || []).map(s => ({ d: s.descricao, v: s.valor })))
         setPecas((os.pecas || []).map(p => ({ id: p.estoqueId, nome: p.nomePeca || '', qtd: p.quantidade, preco: p.precoUnitario })))
+        const orig: Record<number, number> = {}
+        ;(os.pecas || []).forEach(p => { orig[p.estoqueId] = (orig[p.estoqueId] || 0) + p.quantidade })
+        setPecasOriginais(orig)
         if (os.clienteId) {
           const vl = await veiculosAPI.listarPorCliente(os.clienteId)
           setVeiculos(vl); setVeiculoId(String(os.veiculoId))
@@ -185,6 +189,19 @@ function OSForm() {
   const tipoVeiculo = veiculos.find(v => String(v.id) === veiculoId)?.tipo
   const pecasCompativeis = estoqueCache.filter(e =>
     !tipoVeiculo || !e.tipos?.length || e.tipos.includes(tipoVeiculo) || pecas.some(p => p.id === e.id))
+
+  // Disponível = estoque atual + o que esta OS já tinha baixado (volta ao salvar a edição)
+  function avisoEstoque(p: FormPeca) {
+    const item = estoqueCache.find(e => e.id === p.id)
+    if (!item) return null
+    const disponivel = item.quantidade + (pecasOriginais[item.id] || 0)
+    const usado = pecas.filter(x => x.id === item.id).reduce((a, x) => a + (parseInt(String(x.qtd)) || 1), 0)
+    if (usado > disponivel)
+      return <div className="emsg" style={{ flexBasis: '100%', fontSize: 13 }}>Estoque insuficiente: disponível {disponivel} un.</div>
+    if (disponivel - usado < item.quantidadeMinima)
+      return <div style={{ flexBasis: '100%', fontSize: 13, color: 'var(--yw)' }}>⚠ O estoque ficará abaixo do mínimo ({disponivel - usado} de {item.quantidadeMinima} un.)</div>
+    return null
+  }
 
   async function save() {
     if (!clienteId) { setError('Selecione o cliente'); return }
@@ -281,6 +298,7 @@ function OSForm() {
               <input className="finp" type="number" placeholder="Qtd" style={{ width: 70, flexShrink: 0 }} min={1} value={p.qtd} onChange={e => updatePeca(i, 'qtd', parseInt(e.target.value) || 1)} />
               <input className="finp" type="number" placeholder="R$ unit." style={{ width: 110, flexShrink: 0 }} step={0.01} value={p.preco || ''} onChange={e => updatePeca(i, 'preco', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removePeca(i)}>×</button>
+              {avisoEstoque(p)}
             </div>
           )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhuma peça adicionada.</div>}
           {pecas.length > 0 && <div style={{ textAlign: 'right', fontSize: 14, color: 'var(--tx2)', marginTop: 8 }}>Total peças: {fmtCur(totalPecas)}</div>}
