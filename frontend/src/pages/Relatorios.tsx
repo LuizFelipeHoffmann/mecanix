@@ -108,8 +108,6 @@ export default function Relatorios() {
   })
   const topCli = Object.entries(cliRev).sort((a, b) => b[1] - a[1]).slice(0, 5)
 
-  void veiculos
-
   // Faturamento das OS concluídas nos últimos 6 meses (inclui o atual)
   const hoje = new Date()
   const meses = Array.from({ length: 6 }, (_, i) => {
@@ -134,7 +132,7 @@ export default function Relatorios() {
           { lbl: 'Faturamento concluído', val: fmtCur(rev), sub: `${done.length} OS concluída(s)`, ico: 'var(--or)', bg: 'var(--ord)', mac: 'var(--or)' },
           { lbl: 'Ticket médio', val: fmtCur(ticket), sub: 'por OS concluída', ico: 'var(--bl)', bg: 'var(--bld)', mac: 'var(--bl)' },
           { lbl: 'Em aberto (potencial)', val: fmtCur(revOp), sub: `${open.length} OS em andamento`, ico: 'var(--yw)', bg: 'var(--ywd)', mac: 'var(--yw)' },
-          { lbl: 'Total de clientes', val: String(clientes.length), sub: `${clientes.length} cadastrado(s)`, ico: 'var(--gn)', bg: 'var(--gnd)', mac: 'var(--gn)' },
+          { lbl: 'Total de clientes', val: String(clientes.length), sub: `${veiculos.length} veículo(s) cadastrado(s)`, ico: 'var(--gn)', bg: 'var(--gnd)', mac: 'var(--gn)' },
         ].map(m => (
           <div key={m.lbl} className="met" style={{ '--mac': m.mac, '--macd': m.bg } as React.CSSProperties}>
             <div className="mlbl">{m.lbl}</div>
