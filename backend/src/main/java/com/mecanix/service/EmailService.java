@@ -75,6 +75,7 @@ public class EmailService {
             case "CONCLUIDO"  -> "#22c55e";
             case "CANCELADO"  -> "#ef4444";
             case "AGUARDANDO" -> "#3b82f6";
+            case "AGENDADO"   -> "#8b5cf6";
             default           -> "#f59e0b";
         };
     }

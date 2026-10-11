@@ -207,7 +207,7 @@ export const STATUS_BADGE: Record<string, string> = {
   ANDAMENTO:  'byw',
   AGUARDANDO: 'bbl',
   CONCLUIDO:  'bgn',
-  AGENDADO:   'bgy',
+  AGENDADO:   'bvi',
   CANCELADO:  'brd2',
 };
 
