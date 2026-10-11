@@ -59,6 +59,13 @@ export default function Login() {
           {loading ? 'Entrando...' : 'Entrar no sistema'}
         </button>
 
+        <div style={{ textAlign: 'center', marginTop: 14, fontSize: 13, color: 'var(--tx2)' }}>
+          Sua oficina ainda não usa o MECANIX?{' '}
+          <span style={{ color: 'var(--or)', fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate('/cadastro')}>
+            Criar conta
+          </span>
+        </div>
+
         <div className="hint" style={{ marginTop: 16 }}>
           <div className="hint-t">Perfis de demonstração</div>
           <div className="hint-r"><b>admin@mecanix.com</b> / admin123 — Acesso total</div>

@@ -1,5 +1,6 @@
 package com.mecanix.controller;
 
+import com.mecanix.dto.CadastroRequest;
 import com.mecanix.dto.LoginRequest;
 import com.mecanix.dto.UsuarioResponse;
 import com.mecanix.exception.BusinessException;
@@ -19,6 +20,15 @@ public class AuthController {
     @PostMapping("/login")
     public UsuarioResponse login(@Valid @RequestBody LoginRequest req, HttpServletRequest httpReq) {
         UsuarioResponse resp = auth.autenticar(req.getEmail(), req.getSenha());
+        HttpSession session = httpReq.getSession(true);
+        session.setAttribute("usuario", resp);
+        session.setMaxInactiveInterval(28800);
+        return resp;
+    }
+
+    @PostMapping("/cadastro")
+    public UsuarioResponse cadastro(@Valid @RequestBody CadastroRequest req, HttpServletRequest httpReq) {
+        UsuarioResponse resp = auth.cadastrarEmpresa(req);
         HttpSession session = httpReq.getSession(true);
         session.setAttribute("usuario", resp);
         session.setMaxInactiveInterval(28800);

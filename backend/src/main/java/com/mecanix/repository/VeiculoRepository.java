@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Optional;
 @Repository
 public interface VeiculoRepository extends JpaRepository<Veiculo,Long> {
-    List<Veiculo> findByClienteId(Long clienteId);
-    Optional<Veiculo> findByPlaca(String placa);
-    boolean existsByPlaca(String placa);
+    List<Veiculo> findByEmpresaId(Long empresaId);
+    List<Veiculo> findByClienteIdAndEmpresaId(Long clienteId, Long empresaId);
+    Optional<Veiculo> findByIdAndEmpresaId(Long id, Long empresaId);
+    Optional<Veiculo> findByPlacaAndEmpresaId(String placa, Long empresaId);
+    boolean existsByPlacaAndEmpresaId(String placa, Long empresaId);
+    boolean existsByIdAndEmpresaId(Long id, Long empresaId);
 }

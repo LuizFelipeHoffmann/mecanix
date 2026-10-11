@@ -10,16 +10,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "clientes")
+@Table(name = "clientes", uniqueConstraints = @UniqueConstraint(columnNames = {"empresa_id", "cpf"}))
 @EntityListeners(AuditingEntityListener.class)
 public class Cliente {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
+
     @Column(nullable = false, length = 100)
     private String nome;
 
-    @Column(nullable = false, unique = true, length = 14)
+    @Column(nullable = false, length = 14)
     private String cpf;
 
     @Column(length = 100)
@@ -47,6 +51,7 @@ public class Cliente {
     private List<OrdemServico> ordens;
 
     public Long getId() { return id; }
+    public Empresa getEmpresa() { return empresa; }
     public String getNome() { return nome; }
     public String getCpf() { return cpf; }
     public String getEmail() { return email; }
@@ -58,6 +63,7 @@ public class Cliente {
     public List<OrdemServico> getOrdens() { return ordens; }
 
     public void setId(Long id) { this.id = id; }
+    public void setEmpresa(Empresa e) { this.empresa = e; }
     public void setNome(String n) { this.nome = n; }
     public void setCpf(String c) { this.cpf = c; }
     public void setEmail(String e) { this.email = e; }
