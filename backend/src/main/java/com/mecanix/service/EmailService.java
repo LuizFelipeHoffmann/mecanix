@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 @Service
@@ -39,7 +40,7 @@ public class EmailService {
         // Remetente = conta Gmail da oficina (MAIL_USERNAME), exibida com o nome MAIL_NOME
         helper.setFrom(new InternetAddress(remetente, nomeRemetente, "UTF-8"));
         helper.setTo(destinatario);
-        helper.setSubject("Ordem de Servico " + osNum(os.getId()) + " - MECANIX");
+        helper.setSubject("Ordem de Serviço " + osNum(os.getId()) + " - MECANIX");
         helper.setText(buildHtml(os), true);
 
         mailSender.send(message);
@@ -49,18 +50,20 @@ public class EmailService {
         return "#" + String.format("%04d", id);
     }
 
+    private static final Locale PT_BR = Locale.of("pt", "BR");
+
+    // R$ 1.435,00 (separador de milhar e vírgula decimal, como no sistema)
     private String fmtCur(BigDecimal v) {
-        if (v == null) return "R$ 0,00";
-        return "R$ " + String.format("%.2f", v).replace(".", ",");
+        return NumberFormat.getCurrencyInstance(PT_BR).format(v != null ? v : BigDecimal.ZERO);
     }
 
     private String fmtStatus(String s) {
         if (s == null) return "—";
         return switch (s) {
             case "ANDAMENTO"  -> "Em andamento";
-            case "AGUARDANDO" -> "Aguardando peca";
+            case "AGUARDANDO" -> "Aguardando peça";
             case "AGENDADO"   -> "Agendado";
-            case "CONCLUIDO"  -> "Concluido";
+            case "CONCLUIDO"  -> "Concluído";
             case "CANCELADO"  -> "Cancelado";
             default -> s;
         };
@@ -91,7 +94,7 @@ public class EmailService {
                     .append("</tr>");
             }
         }
-        if (svcs.length() == 0) svcs.append("<tr><td colspan=\"2\" style=\"color:#6b7280;padding:10px 0\">Nenhum servico.</td></tr>");
+        if (svcs.length() == 0) svcs.append("<tr><td colspan=\"2\" style=\"color:#6b7280;padding:10px 0\">Nenhum serviço.</td></tr>");
 
         StringBuilder pecas = new StringBuilder();
         if (os.getPecas() != null) {
@@ -104,14 +107,14 @@ public class EmailService {
                     .append("</tr>");
             }
         }
-        if (pecas.length() == 0) pecas.append("<tr><td colspan=\"4\" style=\"color:#6b7280;padding:10px 0\">Nenhuma peca.</td></tr>");
+        if (pecas.length() == 0) pecas.append("<tr><td colspan=\"4\" style=\"color:#6b7280;padding:10px 0\">Nenhuma peça.</td></tr>");
 
         String obs = (os.getObservacoes() != null && !os.getObservacoes().isBlank())
             ? "<div style=\"margin:12px 0;padding:12px;background:#1a1a1a;border-radius:6px;color:#9ca3af;font-size:13px\">Obs: " + esc(os.getObservacoes()) + "</div>"
             : "";
 
         String cor = corStatus(os.getStatus());
-        String data = os.getData() != null ? os.getData().toString() : "—";
+        String data = os.getData() != null ? os.getData().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "—";
         String mecanico = os.getMecanico() != null ? esc(os.getMecanico()) : "—";
 
         return "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"></head><body style=\"margin:0;padding:0;background:#0f0f0f;font-family:Arial,sans-serif\">"
@@ -120,7 +123,7 @@ public class EmailService {
             // Header
             + "<div style=\"background:#1a1a1a;border-radius:12px 12px 0 0;padding:24px;text-align:center;border-bottom:2px solid #f59e0b\">"
             + "<div style=\"font-size:26px;font-weight:800;color:#f59e0b;letter-spacing:2px\">MECANIX</div>"
-            + "<div style=\"font-size:12px;color:#6b7280;margin-top:2px\">Sistema de Gestao de Oficinas</div>"
+            + "<div style=\"font-size:12px;color:#6b7280;margin-top:2px\">Sistema de Gestão de Oficinas</div>"
             + "</div>"
 
             // OS + Status
@@ -139,12 +142,12 @@ public class EmailService {
             + "<div style=\"font-weight:600;color:#f3f4f6\">" + esc(os.getClienteNome()) + "</div>"
             + "</td>"
             + "<td style=\"padding:8px 16px 8px 0;vertical-align:top;width:33%\">"
-            + "<div style=\"font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px\">Veiculo</div>"
+            + "<div style=\"font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px\">Veículo</div>"
             + "<div style=\"font-weight:600;color:#f3f4f6\">" + esc(os.getVeiculoDesc()) + "</div>"
             + "<div style=\"font-size:12px;color:#6b7280\">" + esc(os.getVeiculoPlaca()) + "</div>"
             + "</td>"
             + "<td style=\"padding:8px 0;vertical-align:top;width:33%\">"
-            + "<div style=\"font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px\">Mecanico</div>"
+            + "<div style=\"font-size:10px;color:#4b5563;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px\">Mecânico</div>"
             + "<div style=\"font-weight:600;color:#f3f4f6\">" + mecanico + "</div>"
             + "</td>"
             + "</tr></table>"
@@ -153,26 +156,26 @@ public class EmailService {
 
             // Servicos
             + "<div style=\"background:#141414;padding:20px 24px;margin-top:2px\">"
-            + "<div style=\"font-size:13px;font-weight:700;color:#f3f4f6;margin-bottom:12px\">SERVICOS</div>"
+            + "<div style=\"font-size:13px;font-weight:700;color:#f3f4f6;margin-bottom:12px\">SERVIÇOS</div>"
             + "<table style=\"width:100%;border-collapse:collapse\">"
-            + "<thead><tr><th style=\"font-size:11px;color:#4b5563;text-align:left;padding-bottom:8px\">DESCRICAO</th>"
+            + "<thead><tr><th style=\"font-size:11px;color:#4b5563;text-align:left;padding-bottom:8px\">DESCRIÇÃO</th>"
             + "<th style=\"font-size:11px;color:#4b5563;text-align:right;padding-bottom:8px\">VALOR</th></tr></thead>"
             + "<tbody>" + svcs + "</tbody>"
-            + "<tfoot><tr><td style=\"padding-top:12px;font-size:12px;color:#6b7280\">Total servicos</td>"
+            + "<tfoot><tr><td style=\"padding-top:12px;font-size:12px;color:#6b7280\">Total serviços</td>"
             + "<td style=\"padding-top:12px;text-align:right;font-weight:700;color:#f59e0b\">" + fmtCur(os.getTotalServicos()) + "</td></tr></tfoot>"
             + "</table></div>"
 
             // Pecas
             + "<div style=\"background:#141414;padding:20px 24px;margin-top:2px\">"
-            + "<div style=\"font-size:13px;font-weight:700;color:#f3f4f6;margin-bottom:12px\">PECAS</div>"
+            + "<div style=\"font-size:13px;font-weight:700;color:#f3f4f6;margin-bottom:12px\">PEÇAS</div>"
             + "<table style=\"width:100%;border-collapse:collapse\">"
             + "<thead><tr>"
-            + "<th style=\"font-size:11px;color:#4b5563;text-align:left;padding-bottom:8px\">PECA</th>"
+            + "<th style=\"font-size:11px;color:#4b5563;text-align:left;padding-bottom:8px\">PEÇA</th>"
             + "<th style=\"font-size:11px;color:#4b5563;text-align:center;padding-bottom:8px\">QTD</th>"
             + "<th style=\"font-size:11px;color:#4b5563;text-align:right;padding-bottom:8px\">UNIT.</th>"
             + "<th style=\"font-size:11px;color:#4b5563;text-align:right;padding-bottom:8px\">SUBTOTAL</th></tr></thead>"
             + "<tbody>" + pecas + "</tbody>"
-            + "<tfoot><tr><td colspan=\"3\" style=\"padding-top:12px;font-size:12px;color:#6b7280\">Total pecas</td>"
+            + "<tfoot><tr><td colspan=\"3\" style=\"padding-top:12px;font-size:12px;color:#6b7280\">Total peças</td>"
             + "<td style=\"padding-top:12px;text-align:right;font-weight:700;color:#f59e0b\">" + fmtCur(os.getTotalPecas()) + "</td></tr></tfoot>"
             + "</table></div>"
 
@@ -184,7 +187,7 @@ public class EmailService {
             + "</tr></table></div>"
 
             // Footer
-            + "<div style=\"text-align:center;padding:20px;color:#374151;font-size:12px\">MECANIX - Gestao de Oficinas - E-mail automatico</div>"
+            + "<div style=\"text-align:center;padding:20px;color:#374151;font-size:12px\">MECANIX - Gestão de Oficinas - E-mail automático</div>"
             + "</div></body></html>";
     }
 }
