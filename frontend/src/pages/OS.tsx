@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
+import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, TIPO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
 function Badge({ status }: { status: string }) {
   return <span className={`badge ${STATUS_BADGE[status] || 'bgy'}`}><span className="bdot" />{STATUS_LABELS[status] || status}</span>
@@ -127,6 +127,7 @@ function OSForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [pecasOriginais, setPecasOriginais] = useState<Record<number, number>>({})
 
   useEffect(() => {
     Promise.all([clientesAPI.listar(), estoqueAPI.listar()]).then(async ([cls, est]) => {
@@ -137,6 +138,9 @@ function OSForm() {
         setData(os.data || new Date().toISOString().split('T')[0]); setObs(os.observacoes || '')
         setSvcs((os.servicos || []).map(s => ({ d: s.descricao, v: s.valor })))
         setPecas((os.pecas || []).map(p => ({ id: p.estoqueId, nome: p.nomePeca || '', qtd: p.quantidade, preco: p.precoUnitario })))
+        const orig: Record<number, number> = {}
+        ;(os.pecas || []).forEach(p => { orig[p.estoqueId] = (orig[p.estoqueId] || 0) + p.quantidade })
+        setPecasOriginais(orig)
         if (os.clienteId) {
           const vl = await veiculosAPI.listarPorCliente(os.clienteId)
           setVeiculos(vl); setVeiculoId(String(os.veiculoId))
@@ -152,13 +156,13 @@ function OSForm() {
   }, [editId])
 
   async function onClienteChange(cid: string) {
-    setClienteId(cid); setVeiculoId(''); setVeiculos([])
-    if (!cid) return
+    setClienteId(cid); setVeiculoId('')
+    if (!cid) { setVeiculos([]); return }
     try {
       const vl = await veiculosAPI.listarPorCliente(parseInt(cid))
       setVeiculos(vl)
       if (vl.length) setVeiculoId(String(vl[0].id))
-    } catch {}
+    } catch { setVeiculos([]) }
   }
 
   function addSvc() { setSvcs(s => [...s, { d: '', v: 0 }]) }
@@ -179,6 +183,25 @@ function OSForm() {
 
   const totalSvcs = svcs.reduce((a, s) => a + (parseFloat(String(s.v)) || 0), 0)
   const totalPecas = pecas.reduce((a, p) => a + (parseFloat(String(p.preco)) || 0) * (parseInt(String(p.qtd)) || 1), 0)
+
+  // Só oferece peças compatíveis com o tipo do veículo (peça sem tipo cadastrado serve
+  // para qualquer um) e mantém na lista as que já foram lançadas nesta OS
+  const tipoVeiculo = veiculos.find(v => String(v.id) === veiculoId)?.tipo
+  const pecasCompativeis = estoqueCache.filter(e =>
+    !tipoVeiculo || !e.tipos?.length || e.tipos.includes(tipoVeiculo) || pecas.some(p => p.id === e.id))
+
+  // Disponível = estoque atual + o que esta OS já tinha baixado (volta ao salvar a edição)
+  function avisoEstoque(p: FormPeca) {
+    const item = estoqueCache.find(e => e.id === p.id)
+    if (!item) return null
+    const disponivel = item.quantidade + (pecasOriginais[item.id] || 0)
+    const usado = pecas.filter(x => x.id === item.id).reduce((a, x) => a + (parseInt(String(x.qtd)) || 1), 0)
+    if (usado > disponivel)
+      return <div className="emsg" style={{ flexBasis: '100%', fontSize: 13 }}>Estoque insuficiente: disponível {disponivel} un.</div>
+    if (disponivel - usado < item.quantidadeMinima)
+      return <div style={{ flexBasis: '100%', fontSize: 13, color: 'var(--yw)' }}>⚠ O estoque ficará abaixo do mínimo ({disponivel - usado} de {item.quantidadeMinima} un.)</div>
+    return null
+  }
 
   async function save() {
     if (!clienteId) { setError('Selecione o cliente'); return }
@@ -222,8 +245,14 @@ function OSForm() {
             <div className="fg full">
               <label>Veículo *</label>
               <select className="finp" value={veiculoId} onChange={e => setVeiculoId(e.target.value)}>
-                {veiculos.length ? veiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo} {v.ano || ''}</option>) : <option value="">Selecione o cliente primeiro...</option>}
+                {veiculos.length ? veiculos.map(v => <option key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo} {v.ano || ''}</option>) : <option value="">{clienteId ? 'Cliente sem veículo cadastrado' : 'Selecione o cliente primeiro...'}</option>}
               </select>
+              {clienteId && !veiculos.length && (
+                <div className="lookup-row" style={{ color: 'var(--yw)', flexWrap: 'wrap' }}>
+                  Cadastre um veículo para este cliente antes de abrir a OS.
+                  <button className="btn btn-g sm" onClick={() => navigate(`/veiculos/new?clienteId=${clienteId}`)}>+ Cadastrar veículo</button>
+                </div>
+              )}
             </div>
             <div className="fg">
               <label>Status</label>
@@ -261,15 +290,21 @@ function OSForm() {
           <button className="btn btn-g sm" onClick={addPeca}>+ Adicionar peça</button>
         </div>
         <div className="cbd">
+          {tipoVeiculo && (
+            <div className={`compat-info${tipoVeiculo === 'ELETRICO' ? ' electric' : ''}`}>
+              <span>Mostrando as peças compatíveis com veículos do tipo <b>{TIPO_LABELS[tipoVeiculo] || tipoVeiculo}</b>.</span>
+            </div>
+          )}
           {pecas.length ? pecas.map((p, i) => (
             <div key={i} className="item-row">
               <select className="finp" style={{ flex: 2, minWidth: 160 }} value={p.id || ''} onChange={e => selectPeca(i, e.target.value)}>
                 <option value="">Selecione...</option>
-                {estoqueCache.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
+                {pecasCompativeis.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
               </select>
               <input className="finp" type="number" placeholder="Qtd" style={{ width: 70, flexShrink: 0 }} min={1} value={p.qtd} onChange={e => updatePeca(i, 'qtd', parseInt(e.target.value) || 1)} />
               <input className="finp" type="number" placeholder="R$ unit." style={{ width: 110, flexShrink: 0 }} step={0.01} value={p.preco || ''} onChange={e => updatePeca(i, 'preco', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removePeca(i)}>×</button>
+              {avisoEstoque(p)}
             </div>
           )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhuma peça adicionada.</div>}
           {pecas.length > 0 && <div style={{ textAlign: 'right', fontSize: 14, color: 'var(--tx2)', marginTop: 8 }}>Total peças: {fmtCur(totalPecas)}</div>}
@@ -318,7 +353,8 @@ function OSDetail() {
   }, [osId])
 
   async function mudarStatus(novoStatus: string) {
-    if (!os || !confirm(`Alterar status para "${STATUS_LABELS[novoStatus]}"?`)) return
+    const aviso = novoStatus === 'CANCELADO' ? '\n\nAs peças voltam ao estoque e a OS não poderá ser reaberta.' : ''
+    if (!os || !confirm(`Alterar status para "${STATUS_LABELS[novoStatus]}"?${aviso}`)) return
     try {
       await ordensAPI.atualizar(osId, {
         clienteId: os.clienteId, veiculoId: os.veiculoId, status: novoStatus, mecanico: os.mecanico,
@@ -369,12 +405,14 @@ function OSDetail() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <Badge status={os.status} />
-            <button className="btn btn-g sm" onClick={() => navigate(`/os/${os.id}/edit`)}>✏️ Editar</button>
-            {os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CONCLUIDO')}>✅ Concluir</button>}
+            {os.status === 'CANCELADO'
+              ? <span style={{ fontSize: 13, color: 'var(--tx2)' }}>OS cancelada: peças devolvidas ao estoque</span>
+              : <button className="btn btn-g sm" onClick={() => navigate(`/os/${os.id}/edit`)}>✏️ Editar</button>}
+            {os.status !== 'CONCLUIDO' && os.status !== 'CANCELADO' && <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CONCLUIDO')}>✅ Concluir</button>}
             {os.status === 'ANDAMENTO' && <button className="btn sm" style={{ background: 'var(--bl)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('AGUARDANDO')}>⏸ Aguardar peça</button>}
-            {os.status === 'AGUARDANDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>▶ Retomar</button>}
+            {os.status === 'AGUARDANDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>▶ Retomar</button>}
             {os.status !== 'CANCELADO' && os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--rd)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CANCELADO')}>✖ Cancelar</button>}
-            {os.status === 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>↩ Reabrir</button>}
+            {os.status === 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>↩ Reabrir</button>}
             {os.clienteEmail
               ? <button className="btn btn-g sm" disabled={emailSending} onClick={enviarEmail}>{emailDone ? '✅ E-mail enviado!' : emailSending ? 'Enviando...' : '📧 Enviar OS por e-mail'}</button>
               : <span style={{ fontSize: 12, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}

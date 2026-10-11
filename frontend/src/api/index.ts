@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8080/api';
+// Em produção (ou outra porta), defina VITE_API_URL no build/dev do Vite
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export interface User {
   id: number;
@@ -183,7 +184,7 @@ export function osNum(id: number) {
 }
 
 export function fmtCur(v: number | string | null | undefined) {
-  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function fmtDate(d: string | null | undefined) {
@@ -229,7 +230,7 @@ export const STATUS_BADGE: Record<string, string> = {
   ANDAMENTO:  'byw',
   AGUARDANDO: 'bbl',
   CONCLUIDO:  'bgn',
-  AGENDADO:   'bgy',
+  AGENDADO:   'bvi',
   CANCELADO:  'brd2',
 };
 

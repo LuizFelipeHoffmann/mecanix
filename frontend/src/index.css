@@ -112,6 +112,7 @@ body { background:var(--bg); color:var(--tx); font-family:system-ui,-apple-syste
 .byw { background:var(--ywd); color:var(--yw); } .byw .bdot { background:var(--yw); }
 .bbl { background:var(--bld); color:var(--bl); } .bbl .bdot { background:var(--bl); }
 .brd2 { background:var(--rdd); color:var(--rd); } .brd2 .bdot { background:var(--rd); }
+.bvi { background:var(--vid); color:var(--vi); } .bvi .bdot { background:var(--vi); }
 .bgy { background:var(--bg3); color:var(--tx2); }
 
 /* ── FORMS ── */
