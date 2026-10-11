@@ -170,7 +170,7 @@ export function osNum(id: number) {
 }
 
 export function fmtCur(v: number | string | null | undefined) {
-  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function fmtDate(d: string | null | undefined) {
