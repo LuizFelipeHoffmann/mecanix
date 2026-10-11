@@ -2,25 +2,25 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
-// Gráfico de barras vertical em SVG puro
+// Gráfico de barras vertical em HTML/CSS: o texto mantém o tamanho em qualquer largura de tela
 function BarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map(d => d.value), 1)
-  const W = 60, H = 160
+  const H = 230 // altura da maior barra, em px
   return (
-    <svg viewBox={`0 0 ${data.length * W} ${H + 40}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label="Faturamento por mês">
-      {data.map((d, i) => {
-        const h = Math.round(d.value / max * H)
-        return (
-          <g key={d.label}>
-            <rect x={i * W + 12} y={H - h + 16} width={W - 24} height={Math.max(h, 2)} rx={5} fill="var(--or)" opacity={i === data.length - 1 ? 1 : .55} />
-            <text x={i * W + W / 2} y={H - h + 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--tx)">
-              {d.value ? d.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''}
-            </text>
-            <text x={i * W + W / 2} y={H + 34} textAnchor="middle" fontSize="12" fill="var(--tx2)">{d.label}</text>
-          </g>
-        )
-      })}
-    </svg>
+    <div role="img" aria-label="Faturamento por mês" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, paddingTop: 8 }}>
+      {data.map((d, i) => (
+        <div key={d.label} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
+            {d.value ? d.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''}
+          </span>
+          <div style={{
+            width: '100%', maxWidth: 56, height: Math.max(Math.round(d.value / max * H), 2), borderRadius: '6px 6px 0 0',
+            background: 'var(--or)', opacity: i === data.length - 1 ? 1 : .55, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact',
+          }} />
+          <span style={{ fontSize: 13, color: 'var(--tx2)' }}>{d.label}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
