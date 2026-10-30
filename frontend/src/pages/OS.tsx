@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
+import { useModal } from '../components/Modal'
+import { useAuth } from '../context/AuthContext'
 import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, fmtDate, osNum, STATUS_LABELS, STATUS_BADGE, FORMA_PAGAMENTO_LABELS, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
 function Badge({ status }: { status: string }) {
@@ -110,6 +112,7 @@ interface FormPeca { id: number | null; nome: string; qtd: number; preco: number
 function OSForm() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { showAlert } = useModal()
   const editId = id ? parseInt(id) : null
   const title = editId ? 'Editar OS' : 'Nova OS'
 
@@ -127,6 +130,9 @@ function OSForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  // índice da linha de peça que está com a busca aberta embaixo do campo
+  // (null = nenhuma) — mesmo padrão de busca por nome usado em Marca/Modelo
+  const [pecaSuggRow, setPecaSuggRow] = useState<number | null>(null)
 
   useEffect(() => {
     Promise.all([clientesAPI.listar(), estoqueAPI.listar()]).then(async ([cls, est]) => {
@@ -169,9 +175,21 @@ function OSForm() {
 
   function addPeca() { setPecas(p => [...p, { id: null, nome: '', qtd: 1, preco: 0 }]) }
   function removePeca(i: number) { setPecas(p => p.filter((_, j) => j !== i)) }
-  function selectPeca(i: number, estoqueId: string) {
-    const item = estoqueCache.find(e => e.id === parseInt(estoqueId))
-    if (item) setPecas(p => p.map((x, j) => j === i ? { ...x, id: item.id, nome: item.nome, preco: item.precoUnitario } : x))
+
+  // Busca por nome em vez de lista pra selecionar — digita e os produtos
+  // que batem com o que foi digitado até agora aparecem embaixo do campo.
+  function onPecaNomeInput(i: number, val: string) {
+    setPecas(p => p.map((x, j) => j === i ? { ...x, nome: val, id: null } : x))
+    setPecaSuggRow(val.trim() ? i : null)
+  }
+  function pecaMatches(query: string): EstoqueItem[] {
+    const q = query.toLowerCase().trim()
+    if (!q) return []
+    return estoqueCache.filter(e => e.nome.toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q)).slice(0, 8)
+  }
+  function selectPecaItem(i: number, item: EstoqueItem) {
+    setPecas(p => p.map((x, j) => j === i ? { ...x, id: item.id, nome: item.nome, preco: item.precoUnitario } : x))
+    setPecaSuggRow(null)
   }
   function updatePeca(i: number, field: 'qtd' | 'preco', val: number) {
     setPecas(p => p.map((x, j) => j === i ? { ...x, [field]: val } : x))
@@ -198,7 +216,7 @@ function OSForm() {
   async function del() {
     if (!editId || !confirm('Excluir esta OS?')) return
     try { await ordensAPI.deletar(editId); navigate('/os') }
-    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+    catch (e: unknown) { showAlert('Erro: ' + (e instanceof Error ? e.message : '')) }
   }
 
   const STATUS_LIST = ['ANDAMENTO', 'AGUARDANDO', 'AGENDADO', 'CONCLUIDO', 'CANCELADO']
@@ -263,10 +281,27 @@ function OSForm() {
         <div className="cbd">
           {pecas.length ? pecas.map((p, i) => (
             <div key={i} className="item-row">
-              <select className="finp" style={{ flex: 2, minWidth: 160 }} value={p.id || ''} onChange={e => selectPeca(i, e.target.value)}>
-                <option value="">Selecione...</option>
-                {estoqueCache.map(e => <option key={e.id} value={e.id}>{e.nome} (est: {e.quantidade})</option>)}
-              </select>
+              <div className="ac-wrap" style={{ position: 'relative', flex: 2, minWidth: 160 }}>
+                <input className="finp" type="text" placeholder="Digite o nome da peça..." autoComplete="off"
+                  value={p.nome} onChange={e => onPecaNomeInput(i, e.target.value)}
+                  onFocus={() => p.nome.trim() && setPecaSuggRow(i)}
+                  onBlur={() => setTimeout(() => setPecaSuggRow(r => r === i ? null : r), 200)} />
+                {pecaSuggRow === i && (
+                  pecaMatches(p.nome).length ? (
+                    <div className="ac-drop show">
+                      {pecaMatches(p.nome).map(item => (
+                        <div key={item.id} className="ac-item" onMouseDown={() => selectPecaItem(i, item)}>
+                          <span className="ac-name">{item.nome}</span>
+                          <span className="ac-val">{fmtCur(item.precoUnitario)}</span>
+                          <span className="ac-tag">est: {item.quantidade}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="ac-drop show"><div className="ac-empty">Nenhuma peça encontrada no estoque</div></div>
+                  )
+                )}
+              </div>
               <input className="finp" type="number" placeholder="Qtd" style={{ width: 70, flexShrink: 0 }} min={1} value={p.qtd} onChange={e => updatePeca(i, 'qtd', parseInt(e.target.value) || 1)} />
               <input className="finp" type="number" placeholder="R$ unit." style={{ width: 110, flexShrink: 0 }} step={0.01} value={p.preco || ''} onChange={e => updatePeca(i, 'preco', parseFloat(e.target.value) || 0)} />
               <button className="btn sm" style={{ background: 'var(--rdd)', color: 'var(--rd)', border: 'none' }} onClick={() => removePeca(i)}>×</button>
@@ -295,6 +330,8 @@ function OSDetail() {
   const navigate = useNavigate()
   const { id } = useParams()
   const osId = parseInt(id!)
+  const { showAlert } = useModal()
+  const { user } = useAuth()
   const [os, setOs] = useState<OrdemServico | null>(null)
   const [loading, setLoading] = useState(true)
   const [emailSending, setEmailSending] = useState(false)
@@ -304,13 +341,13 @@ function OSDetail() {
   async function darBaixa() {
     if (!confirm(`Confirmar recebimento de ${fmtCur(os?.total)} via ${FORMA_PAGAMENTO_LABELS[forma]}?`)) return
     try { setOs(await ordensAPI.darBaixa(osId, forma)) }
-    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+    catch (e: unknown) { showAlert('Erro: ' + (e instanceof Error ? e.message : '')) }
   }
 
   async function estornar() {
     if (!confirm('Estornar o pagamento desta OS? Ela voltará a ficar pendente.')) return
     try { setOs(await ordensAPI.estornar(osId)) }
-    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+    catch (e: unknown) { showAlert('Erro: ' + (e instanceof Error ? e.message : '')) }
   }
 
   useEffect(() => {
@@ -328,7 +365,7 @@ function OSDetail() {
       })
       const updated = await ordensAPI.buscar(osId)
       setOs(updated)
-    } catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+    } catch (e: unknown) { showAlert('Erro: ' + (e instanceof Error ? e.message : '')) }
   }
 
   async function enviarEmail() {
@@ -345,12 +382,12 @@ function OSDetail() {
       }
       setTimeout(() => setEmailDone(false), 3000)
     } catch (e: unknown) {
-      alert('Erro ao enviar e-mail: ' + (e instanceof Error ? e.message : '') + '\n\nVerifique as variáveis MAIL_USERNAME (Gmail da oficina) e MAIL_PASSWORD (senha de app) no backend.')
+      showAlert('Erro ao enviar e-mail: ' + (e instanceof Error ? e.message : '') + '\n\nVerifique as variáveis MAIL_USERNAME (Gmail da oficina) e MAIL_PASSWORD (senha de app) no backend.', 'Erro ao enviar e-mail')
     } finally { setEmailSending(false) }
   }
 
   const actions = (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div className="no-print" style={{ display: 'flex', gap: 8 }}>
       <button className="btn btn-g sm" onClick={() => navigate('/os')}>← Voltar</button>
       <button className="btn btn-p sm" onClick={() => window.print()}>🖨️ Imprimir</button>
     </div>
@@ -361,6 +398,18 @@ function OSDetail() {
 
   return (
     <Layout title="Detalhes da OS" pageId="os" actions={actions}>
+      {/* só aparece quando imprime — serve de cabeçalho com o nome da oficina
+          cadastrado no "criar conta" (ver AuthService/UsuarioResponse) */}
+      <div className="print-only ph">
+        <div>
+          <div className="plogo">{user?.empresaNome || 'MECANIX'}</div>
+          <div className="pls">Ordem de Serviço</div>
+        </div>
+        <div>
+          <div className="ponm">{osNum(os.id)}</div>
+          <div className="pstatus">{STATUS_LABELS[os.status] || os.status}</div>
+        </div>
+      </div>
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, padding: '20px 20px 16px' }}>
           <div>
@@ -369,15 +418,17 @@ function OSDetail() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <Badge status={os.status} />
-            <button className="btn btn-g sm" onClick={() => navigate(`/os/${os.id}/edit`)}>✏️ Editar</button>
-            {os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CONCLUIDO')}>✅ Concluir</button>}
-            {os.status === 'ANDAMENTO' && <button className="btn sm" style={{ background: 'var(--bl)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('AGUARDANDO')}>⏸ Aguardar peça</button>}
-            {os.status === 'AGUARDANDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>▶ Retomar</button>}
-            {os.status !== 'CANCELADO' && os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--rd)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CANCELADO')}>✖ Cancelar</button>}
-            {os.status === 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>↩ Reabrir</button>}
-            {os.clienteEmail
-              ? <button className="btn btn-g sm" disabled={emailSending} onClick={enviarEmail}>{emailDone ? '✅ E-mail enviado!' : emailSending ? 'Enviando...' : '📧 Enviar OS por e-mail'}</button>
-              : <span style={{ fontSize: 12, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}
+            <div className="no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-g sm" onClick={() => navigate(`/os/${os.id}/edit`)}>✏️ Editar</button>
+              {os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--gn)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CONCLUIDO')}>✅ Concluir</button>}
+              {os.status === 'ANDAMENTO' && <button className="btn sm" style={{ background: 'var(--bl)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('AGUARDANDO')}>⏸ Aguardar peça</button>}
+              {os.status === 'AGUARDANDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>▶ Retomar</button>}
+              {os.status !== 'CANCELADO' && os.status !== 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--rd)', color: '#fff', border: 'none' }} onClick={() => mudarStatus('CANCELADO')}>✖ Cancelar</button>}
+              {os.status === 'CONCLUIDO' && <button className="btn sm" style={{ background: 'var(--yw)', color: '#000', border: 'none' }} onClick={() => mudarStatus('ANDAMENTO')}>↩ Reabrir</button>}
+              {os.clienteEmail
+                ? <button className="btn btn-g sm" disabled={emailSending} onClick={enviarEmail}>{emailDone ? '✅ E-mail enviado!' : emailSending ? 'Enviando...' : '📧 Enviar OS por e-mail'}</button>
+                : <span style={{ fontSize: 12, color: 'var(--tx3)' }}>Cliente sem e-mail</span>}
+            </div>
           </div>
         </div>
 
@@ -435,10 +486,10 @@ function OSDetail() {
                 <div style={{ color: 'var(--tx2)' }}>
                   Recebido em <b style={{ color: 'var(--tx)' }}>{fmtDate(os.dataPagamento)}</b> via <b style={{ color: 'var(--tx)' }}>{FORMA_PAGAMENTO_LABELS[os.formaPagamento || ''] || os.formaPagamento}</b>
                 </div>
-                <button className="btn btn-g sm" onClick={estornar}>↩ Estornar pagamento</button>
+                <button className="btn btn-g sm no-print" onClick={estornar}>↩ Estornar pagamento</button>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="no-print" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select className="finp" style={{ width: 'auto', flex: '1 1 180px' }} value={forma} onChange={e => setForma(e.target.value)}>
                   {Object.entries(FORMA_PAGAMENTO_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                 </select>

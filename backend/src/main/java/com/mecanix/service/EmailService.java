@@ -3,10 +3,12 @@ package com.mecanix.service;
 import com.mecanix.dto.OrdemResponse;
 import com.mecanix.dto.ItemServicoResponse;
 import com.mecanix.dto.ItemPecaResponse;
+import com.mecanix.model.Empresa;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -14,35 +16,116 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Properties;
 
 @Service
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    // Conta compartilhada do MECANIX — usada quando a oficina NÃO configurou
+    // a própria conta de e-mail (ver Empresa.emailRemetenteProprio).
+    private final JavaMailSender mailSenderCompartilhado;
+    private final CryptoUtil crypto;
 
     @Value("${mecanix.mail.remetente}")
-    private String remetente;
+    private String remetentePadrao;
 
     @Value("${mecanix.mail.nome}")
-    private String nomeRemetente;
+    private String nomePadrao;
 
-    public String getRemetente() { return nomeRemetente + " <" + remetente + ">"; }
-
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    public EmailService(JavaMailSender mailSender, CryptoUtil crypto) {
+        this.mailSenderCompartilhado = mailSender;
+        this.crypto = crypto;
     }
 
-    public void enviarOS(OrdemResponse os, String destinatario) throws Exception {
-        MimeMessage message = mailSender.createMimeMessage();
+    // Texto exibido pro admin confirmando de onde o e-mail vai saber (mostrado
+    // na tela de configuração e na confirmação de envio da OS).
+    public String getRemetente(Empresa empresa) {
+        if (usaContaPropria(empresa)) {
+            String nome = nomeRemetenteDe(empresa);
+            return nome + " <" + empresa.getEmailRemetenteProprio() + ">";
+        }
+        return nomePadrao + " <" + remetentePadrao + ">";
+    }
+
+    private boolean usaContaPropria(Empresa empresa) {
+        return empresa != null
+            && empresa.getEmailRemetenteProprio() != null && !empresa.getEmailRemetenteProprio().isBlank()
+            && empresa.getEmailSenhaProprio() != null && !empresa.getEmailSenhaProprio().isBlank();
+    }
+
+    private String nomeRemetenteDe(Empresa empresa) {
+        if (empresa.getEmailNomeRemetente() != null && !empresa.getEmailNomeRemetente().isBlank())
+            return empresa.getEmailNomeRemetente();
+        return empresa.getNomeFantasia() != null ? empresa.getNomeFantasia() : nomePadrao;
+    }
+
+    // Monta um JavaMailSender autenticado com a conta de e-mail PRÓPRIA da
+    // oficina (Gmail SMTP), só quando ela configurou e-mail+senha de app no
+    // perfil — senão cai no sender compartilhado do MECANIX. Criado a cada
+    // envio (não é um @Bean do Spring) porque as credenciais variam por
+    // empresa; o custo de montar isso é insignificante comparado ao envio
+    // em si, então não há necessidade de cachear.
+    private JavaMailSender mailSenderPara(Empresa empresa) {
+        if (!usaContaPropria(empresa)) return mailSenderCompartilhado;
+
+        JavaMailSenderImpl sender = new JavaMailSenderImpl();
+        sender.setHost("smtp.gmail.com");
+        sender.setPort(587);
+        sender.setUsername(empresa.getEmailRemetenteProprio());
+        sender.setPassword(crypto.decrypt(empresa.getEmailSenhaProprio()));
+        Properties props = sender.getJavaMailProperties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        return sender;
+    }
+
+    public void enviarOS(OrdemResponse os, Empresa empresa, String destinatario) throws Exception {
+        JavaMailSender sender = mailSenderPara(empresa);
+        boolean contaPropria = usaContaPropria(empresa);
+
+        MimeMessage message = sender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-        // Remetente = conta Gmail da oficina (MAIL_USERNAME), exibida com o nome MAIL_NOME
-        helper.setFrom(new InternetAddress(remetente, nomeRemetente, "UTF-8"));
+        if (contaPropria) {
+            // Enviando autenticado como a própria conta da oficina — a
+            // resposta do cliente já cai direto na caixa dela, sem precisar
+            // de Reply-To separado.
+            helper.setFrom(new InternetAddress(empresa.getEmailRemetenteProprio(), nomeRemetenteDe(empresa), "UTF-8"));
+        } else {
+            // Fallback: conta compartilhada do MECANIX como remetente
+            // autenticado, com o e-mail cadastrado da oficina em Reply-To —
+            // assim a resposta do cliente ainda cai na caixa da oficina.
+            helper.setFrom(new InternetAddress(remetentePadrao, nomePadrao, "UTF-8"));
+            String replyTo = empresa != null ? empresa.getEmail() : null;
+            if (replyTo != null && !replyTo.isBlank()) {
+                helper.setReplyTo(replyTo);
+            }
+        }
+
         helper.setTo(destinatario);
         helper.setSubject("Ordem de Servico " + osNum(os.getId()) + " - MECANIX");
         helper.setText(buildHtml(os), true);
 
-        mailSender.send(message);
+        sender.send(message);
+    }
+
+    // E-mail simples de teste, usado na tela de configuração pra confirmar
+    // que o e-mail/senha de app da oficina realmente funcionam antes dela
+    // depender disso pra mandar OS pros clientes de verdade.
+    public void enviarTeste(Empresa empresa, String destinatario) throws Exception {
+        JavaMailSender sender = mailSenderPara(empresa);
+        MimeMessage message = sender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setFrom(new InternetAddress(empresa.getEmailRemetenteProprio(), nomeRemetenteDe(empresa), "UTF-8"));
+        helper.setTo(destinatario);
+        helper.setSubject("Teste de envio - MECANIX");
+        helper.setText(
+            "<p style=\"font-family:Arial,sans-serif\">Este é um e-mail de teste enviado pelo MECANIX usando a conta "
+            + "configurada no perfil da sua oficina. Se você recebeu esta mensagem, está tudo certo — as Ordens de "
+            + "Serviço enviadas aos seus clientes vão sair por essa mesma conta.</p>",
+            true);
+        sender.send(message);
     }
 
     private String osNum(Long id) {

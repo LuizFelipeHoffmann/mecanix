@@ -9,13 +9,18 @@ public class Usuario {
     @Column(length=60) private String cargo;
     @Enumerated(EnumType.STRING) @Column(nullable=false,length=20) private Perfil perfil;
     @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="empresa_id",nullable=false) private Empresa empresa;
+    // Foto de perfil, guardada como data-URI base64 (ex: "data:image/png;base64,...").
+    // TEXT em vez de VARCHAR porque uma foto em base64 passa fácil de 255 caracteres.
+    // Simples pro escopo do TCC — numa aplicação real isso seria um arquivo num
+    // storage externo (S3, etc) e aqui só ficaria a URL.
+    @Column(columnDefinition = "TEXT") private String foto;
     public enum Perfil { ADMIN, SERVICOS, ESTOQUE }
     public Long getId(){return id;} public String getNome(){return nome;}
     public String getEmail(){return email;} public String getSenha(){return senha;}
     public String getCargo(){return cargo;} public Perfil getPerfil(){return perfil;}
-    public Empresa getEmpresa(){return empresa;}
+    public Empresa getEmpresa(){return empresa;} public String getFoto(){return foto;}
     public void setId(Long id){this.id=id;} public void setNome(String n){this.nome=n;}
     public void setEmail(String e){this.email=e;} public void setSenha(String s){this.senha=s;}
     public void setCargo(String c){this.cargo=c;} public void setPerfil(Perfil p){this.perfil=p;}
-    public void setEmpresa(Empresa e){this.empresa=e;}
+    public void setEmpresa(Empresa e){this.empresa=e;} public void setFoto(String f){this.foto=f;}
 }

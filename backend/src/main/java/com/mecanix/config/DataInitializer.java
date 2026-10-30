@@ -30,7 +30,13 @@ public class DataInitializer {
                 e.setRazaoSocial("Oficina Demo LTDA");
                 e.setCnpj(CNPJ_DEMO);
                 e.setTelefone("(41) 3000-0000");
-                e.setEndereco("Rua Demo, 1, Curitiba-PR");
+                e.setTipoDocumento("CNPJ");
+                e.setCep("80010-000");
+                e.setRua("Rua Demo");
+                e.setNumero("1");
+                e.setBairro("Centro");
+                e.setCidade("Curitiba");
+                e.setUf("PR");
                 e.setEmail("admin@mecanix.com");
                 return empresaRepo.save(e);
             });

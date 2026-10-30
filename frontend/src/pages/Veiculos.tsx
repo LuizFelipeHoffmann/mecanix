@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams, useSearchParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { veiculosAPI, clientesAPI, maskPlate, TIPO_LABELS, TIPO_COLORS, type Veiculo, type Cliente } from '../api'
+import { useModal } from '../components/Modal'
+import { veiculosAPI, clientesAPI, ordensAPI, maskPlate, fmtCur, fmtDate, osNum, TIPO_LABELS, TIPO_COLORS, STATUS_LABELS, STATUS_BADGE, type Veiculo, type Cliente, type OrdemServico } from '../api'
 import { searchMarcas, searchModelos } from '../data/marcas'
 
 function VeiculoList() {
@@ -93,6 +94,7 @@ function VeiculoForm() {
   const navigate = useNavigate()
   const { id } = useParams()
   const [searchParams] = useSearchParams()
+  const { showAlert } = useModal()
   const editId = id ? parseInt(id) : null
   const preCliId = searchParams.get('clienteId') ? parseInt(searchParams.get('clienteId')!) : null
   const title = editId ? 'Editar Veículo' : 'Novo Veículo'
@@ -110,6 +112,7 @@ function VeiculoForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [historico, setHistorico] = useState<OrdemServico[]>([])
 
   const [marcaSugg, setMarcaSugg] = useState<string[]>([])
   const [modeloSugg, setModeloSugg] = useState<string[]>([])
@@ -120,8 +123,10 @@ function VeiculoForm() {
     Promise.all([
       clientesAPI.listar(),
       editId ? veiculosAPI.buscar(editId) : Promise.resolve(null),
-    ]).then(([cls, v]) => {
+      editId ? ordensAPI.listar() : Promise.resolve([] as OrdemServico[]),
+    ]).then(([cls, v, ordens]) => {
       setClientes(cls)
+      setHistorico(ordens.filter(o => o.veiculoId === editId))
       if (v) {
         setClienteId(String(v.clienteId)); setMarca(v.marca); setModelo(v.modelo)
         setAno(v.ano || ''); setCor(v.cor || ''); setPlaca(v.placa); setTipo(v.tipo)
@@ -169,7 +174,7 @@ function VeiculoForm() {
   async function del() {
     if (!editId || !confirm('Excluir este veículo?')) return
     try { await veiculosAPI.deletar(editId); navigate('/veiculos') }
-    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+    catch (e: unknown) { showAlert('Erro: ' + (e instanceof Error ? e.message : '')) }
   }
 
   const actions = <button className="btn btn-g sm" onClick={() => navigate('/veiculos')}>← Voltar</button>
@@ -233,6 +238,26 @@ function VeiculoForm() {
           </div>
         </div>
       </div>
+
+      {editId && (
+        <div className="card">
+          <div className="chd"><div className="ctitle">Histórico de ordens de serviço ({historico.length})</div></div>
+          <div className="cbd">
+            {historico.length ? historico.map(o => (
+              <div key={o.id} className="mob-card" onClick={() => navigate(`/os/${o.id}`)}>
+                <div className="mob-card-top">
+                  <span className="osnum">{osNum(o.id)}</span>
+                  <span className={`badge ${STATUS_BADGE[o.status] || 'bgy'}`}><span className="bdot" />{STATUS_LABELS[o.status] || o.status}</span>
+                </div>
+                <div className="mob-card-row">
+                  <span style={{ color: 'var(--tx2)', fontSize: 14 }}>{fmtDate(o.data)} · {(o.servicos || []).map(s => s.descricao).join(', ') || 'Sem serviços lançados'}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--or)', whiteSpace: 'nowrap' }}>{fmtCur(o.total)}</span>
+                </div>
+              </div>
+            )) : <div style={{ fontSize: 14, color: 'var(--tx3)' }}>Nenhum histórico registrado para este veículo.</div>}
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

@@ -119,10 +119,14 @@ export default function Layout({ title, pageId, actions, children }: LayoutProps
 
           <div className="sfooter">
             <div className="u-r">
-              <div className="ava">{user.iniciais || '??'}</div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.nome}</div>
-                <div style={{ fontSize: 12, color: ROLE_COLORS[user.perfil] || 'var(--or)' }}>{ROLE_LABELS[user.perfil] || user.perfil}</div>
+              <div className="u-r-click" onClick={() => { navigate('/perfil'); setSbOpen(false) }} title="Ver perfil">
+                <div className="ava">
+                  {user.foto ? <img src={user.foto} alt="" /> : (user.iniciais || '??')}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.nome}</div>
+                  <div style={{ fontSize: 12, color: ROLE_COLORS[user.perfil] || 'var(--or)' }}>{ROLE_LABELS[user.perfil] || user.perfil}</div>
+                </div>
               </div>
               <div style={{ marginLeft: 'auto', cursor: 'pointer', color: 'var(--tx3)', padding: 6 }} onClick={handleLogout} title="Sair">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
@@ -143,6 +147,11 @@ export default function Layout({ title, pageId, actions, children }: LayoutProps
             <div>{actions}</div>
           </div>
           <div className="ct">
+            {user.statusAssinatura === 'PENDENTE' && (
+              <div style={{ background: 'rgba(245,158,11,.1)', border: '1px solid rgba(245,158,11,.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, color: '#f59e0b', fontSize: 14 }}>
+                ⚠️ Seu período grátis acabou e ainda não identificamos a confirmação do pagamento. O acesso continua liberado, mas confirme sua forma de pagamento pra evitar interrupções.
+              </div>
+            )}
             {children}
           </div>
         </div>

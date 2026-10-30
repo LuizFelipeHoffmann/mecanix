@@ -30,7 +30,9 @@ public class ClienteService {
         Cliente c = new Cliente();
         c.setEmpresa(empresaRepo.getReferenceById(empresaId));
         c.setNome(req.getNome()); c.setCpf(req.getCpf()); c.setEmail(req.getEmail());
-        c.setTelefone(req.getTelefone()); c.setEndereco(req.getEndereco());
+        c.setTelefone(req.getTelefone());
+        c.setCep(req.getCep()); c.setRua(req.getRua()); c.setNumero(req.getNumero());
+        c.setBairro(req.getBairro()); c.setCidade(req.getCidade()); c.setUf(req.getUf());
         return ClienteResponse.from(repo.save(c));
     }
     @Transactional
@@ -41,7 +43,9 @@ public class ClienteService {
             if (!outro.getId().equals(id)) throw new BusinessException("CPF já cadastrado em outro cliente");
         });
         c.setNome(req.getNome()); c.setCpf(req.getCpf()); c.setEmail(req.getEmail());
-        c.setTelefone(req.getTelefone()); c.setEndereco(req.getEndereco());
+        c.setTelefone(req.getTelefone());
+        c.setCep(req.getCep()); c.setRua(req.getRua()); c.setNumero(req.getNumero());
+        c.setBairro(req.getBairro()); c.setCidade(req.getCidade()); c.setUf(req.getUf());
         return ClienteResponse.from(repo.save(c));
     }
     @Transactional

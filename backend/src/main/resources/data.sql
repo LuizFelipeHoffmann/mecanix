@@ -1,14 +1,14 @@
-INSERT INTO empresas (nome_fantasia, razao_social, cnpj, email, telefone, endereco) VALUES
-  ('Oficina Demo', 'Oficina Demo LTDA', '00.000.000/0001-00', 'admin@mecanix.com', '(41) 3000-0000', 'Rua Demo, 1, Curitiba-PR')
+INSERT INTO empresas (nome_fantasia, razao_social, cnpj, tipo_documento, email, telefone, cep, rua, numero, bairro, cidade, uf) VALUES
+  ('Oficina Demo', 'Oficina Demo LTDA', '00.000.000/0001-00', 'CNPJ', 'admin@mecanix.com', '(41) 3000-0000', '80010-000', 'Rua Demo', '1', 'Centro', 'Curitiba', 'PR')
 ON CONFLICT (cnpj) DO NOTHING;
 
-INSERT INTO clientes (nome, cpf, email, telefone, endereco, empresa_id)
+INSERT INTO clientes (nome, cpf, email, telefone, cep, rua, numero, bairro, cidade, uf, empresa_id)
 SELECT * FROM (VALUES
-  ('Carlos Mendes',   '529.982.247-25', 'carlos@email.com',  '(41) 98765-4321', 'Rua das Flores, 100, Curitiba-PR'),
-  ('Ana Paula Costa', '275.487.932-07', 'ana@email.com',     '(41) 91234-5678', 'Av. Batel, 500, Curitiba-PR'),
-  ('Roberto Lima',    '154.369.028-56', 'roberto@email.com', '(41) 99876-5432', 'Rua XV de Novembro, 250, Curitiba-PR'),
-  ('Fernanda Souza',  '432.801.675-84', 'fern@email.com',    '(41) 93456-7890', 'Rua Imaculada, 88, Curitiba-PR')
-) AS v(nome, cpf, email, telefone, endereco)
+  ('Carlos Mendes',   '529.982.247-25', 'carlos@email.com',  '(41) 98765-4321', '80060-150', 'Rua das Flores', '100', 'Centro', 'Curitiba', 'PR'),
+  ('Ana Paula Costa', '275.487.932-07', 'ana@email.com',     '(41) 91234-5678', '80420-090', 'Av. Batel', '500', 'Batel', 'Curitiba', 'PR'),
+  ('Roberto Lima',    '154.369.028-56', 'roberto@email.com', '(41) 99876-5432', '80020-310', 'Rua XV de Novembro', '250', 'Centro', 'Curitiba', 'PR'),
+  ('Fernanda Souza',  '432.801.675-84', 'fern@email.com',    '(41) 93456-7890', '80215-110', 'Rua Imaculada', '88', 'Água Verde', 'Curitiba', 'PR')
+) AS v(nome, cpf, email, telefone, cep, rua, numero, bairro, cidade, uf)
 CROSS JOIN (SELECT id FROM empresas WHERE cnpj = '00.000.000/0001-00') e
 ON CONFLICT (empresa_id, cpf) DO NOTHING;
 

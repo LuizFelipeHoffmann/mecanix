@@ -4,6 +4,8 @@ import com.mecanix.config.SessionUtil;
 import com.mecanix.dto.OrdemRequest;
 import com.mecanix.dto.OrdemResponse;
 import com.mecanix.exception.BusinessException;
+import com.mecanix.model.Empresa;
+import com.mecanix.repository.EmpresaRepository;
 import com.mecanix.service.EmailService;
 import com.mecanix.service.OrdemServicoService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,10 +20,12 @@ import java.util.Map;
 public class OrdemController {
     private final OrdemServicoService service;
     private final EmailService emailService;
+    private final EmpresaRepository empresaRepo;
 
-    public OrdemController(OrdemServicoService service, EmailService emailService) {
+    public OrdemController(OrdemServicoService service, EmailService emailService, EmpresaRepository empresaRepo) {
         this.service = service;
         this.emailService = emailService;
+        this.empresaRepo = empresaRepo;
     }
 
     @GetMapping
@@ -63,13 +67,15 @@ public class OrdemController {
 
     @PostMapping("/{id}/enviar-email")
     public ResponseEntity<Map<String, String>> enviarEmail(@PathVariable Long id, HttpServletRequest req) {
-        OrdemResponse os = service.buscarPorId(id, SessionUtil.empresaId(req));
+        Long empresaId = SessionUtil.empresaId(req);
+        OrdemResponse os = service.buscarPorId(id, empresaId);
         if (os.getClienteEmail() == null || os.getClienteEmail().isBlank())
             throw new BusinessException("O cliente não possui e-mail cadastrado");
+        Empresa empresa = empresaRepo.findById(empresaId).orElse(null);
         try {
-            emailService.enviarOS(os, os.getClienteEmail());
+            emailService.enviarOS(os, empresa, os.getClienteEmail());
             return ResponseEntity.ok(Map.of("msg", "E-mail enviado para " + os.getClienteEmail(),
-                "remetente", emailService.getRemetente()));
+                "remetente", emailService.getRemetente(empresa)));
         } catch (Exception e) {
             throw new BusinessException("Erro ao enviar e-mail: " + e.getMessage());
         }

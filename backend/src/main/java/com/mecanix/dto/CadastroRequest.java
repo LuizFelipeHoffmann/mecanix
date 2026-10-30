@@ -15,14 +15,31 @@ public class CadastroRequest {
     @Size(min = 2, max = 150, message = "Razão social deve ter entre 2 e 150 caracteres")
     private String razaoSocial;
 
-    @NotBlank(message = "CNPJ é obrigatório")
-    @Pattern(regexp = "\\d{2}\\.?\\d{3}\\.?\\d{3}/?\\d{4}-?\\d{2}", message = "CNPJ inválido")
+    @NotBlank(message = "CNPJ ou CPF é obrigatório")
     private String cnpj;
 
-    @Pattern(regexp = "^(\\(\\d{2}\\)\\s?)?(9?\\d{4}[-\\s]?\\d{4})?$", message = "Telefone inválido")
+    // "CNPJ" ou "CPF" — o formato exigido do campo acima depende deste valor
+    // (validado em AuthService, pois o formato correto não é fixo).
+    @NotBlank(message = "Tipo de documento é obrigatório")
+    @Pattern(regexp = "CNPJ|CPF", message = "Tipo de documento deve ser CNPJ ou CPF")
+    private String tipoDocumento = "CNPJ";
+
+    // "GRATIS" (padrão) | "MENSAL" | "ANUAL" — ver PlanoService.
+    private String planoTipo = "GRATIS";
+
+    // sem validação de formato: o cadastro não deve travar por telefone inválido
     private String telefoneEmpresa;
 
-    private String enderecoEmpresa;
+    @Pattern(regexp = "(\\d{5}-?\\d{3})?", message = "CEP inválido")
+    private String cepEmpresa;
+
+    private String ruaEmpresa;
+    private String numeroEmpresa;
+    private String bairroEmpresa;
+    private String cidadeEmpresa;
+
+    @Pattern(regexp = "([A-Za-z]{2})?", message = "UF inválida")
+    private String ufEmpresa;
 
     @AssertTrue(message = "É necessário aceitar os Termos de Uso e a Política de Privacidade")
     private boolean aceiteTermos;
@@ -46,10 +63,24 @@ public class CadastroRequest {
     public void setRazaoSocial(String r) { this.razaoSocial = r; }
     public String getCnpj() { return cnpj; }
     public void setCnpj(String c) { this.cnpj = c; }
+    public String getTipoDocumento() { return tipoDocumento; }
+    public void setTipoDocumento(String t) { this.tipoDocumento = t; }
+    public String getPlanoTipo() { return planoTipo; }
+    public void setPlanoTipo(String p) { this.planoTipo = p; }
     public String getTelefoneEmpresa() { return telefoneEmpresa; }
     public void setTelefoneEmpresa(String t) { this.telefoneEmpresa = t; }
-    public String getEnderecoEmpresa() { return enderecoEmpresa; }
-    public void setEnderecoEmpresa(String e) { this.enderecoEmpresa = e; }
+    public String getCepEmpresa() { return cepEmpresa; }
+    public void setCepEmpresa(String c) { this.cepEmpresa = c; }
+    public String getRuaEmpresa() { return ruaEmpresa; }
+    public void setRuaEmpresa(String r) { this.ruaEmpresa = r; }
+    public String getNumeroEmpresa() { return numeroEmpresa; }
+    public void setNumeroEmpresa(String n) { this.numeroEmpresa = n; }
+    public String getBairroEmpresa() { return bairroEmpresa; }
+    public void setBairroEmpresa(String b) { this.bairroEmpresa = b; }
+    public String getCidadeEmpresa() { return cidadeEmpresa; }
+    public void setCidadeEmpresa(String c) { this.cidadeEmpresa = c; }
+    public String getUfEmpresa() { return ufEmpresa; }
+    public void setUfEmpresa(String u) { this.ufEmpresa = u; }
     public boolean isAceiteTermos() { return aceiteTermos; }
     public void setAceiteTermos(boolean a) { this.aceiteTermos = a; }
     public String getNomeUsuario() { return nomeUsuario; }

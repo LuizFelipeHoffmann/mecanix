@@ -6,19 +6,111 @@ export interface User {
   nome: string;
   email: string;
   perfil: 'ADMIN' | 'SERVICOS' | 'ESTOQUE';
+  cargo?: string;
   iniciais: string;
+  planoTipo?: 'GRATIS' | 'MENSAL' | 'ANUAL';
+  statusAssinatura?: 'TRIAL' | 'PENDENTE' | 'ATIVA' | 'INADIMPLENTE' | 'CANCELADA';
+  trialFim?: string;
+  empresaNome?: string;
+  foto?: string;
+}
+
+export interface PerfilParams {
+  nome?: string;
+  foto?: string;
+  removerFoto?: boolean;
+}
+
+export interface SenhaParams {
+  senhaAtual: string;
+  senhaNova: string;
+}
+
+// Acesso de funcionário (perfil SERVICOS ou ESTOQUE) dentro da equipe da
+// empresa — gerenciado pelo administrador na aba "Equipe" do perfil.
+export interface MembroEquipe {
+  id: number;
+  nome: string;
+  email: string;
+  cargo?: string;
+  perfil: 'SERVICOS' | 'ESTOQUE';
+  iniciais: string;
+}
+
+export interface CriarMembroParams {
+  nome: string;
+  email: string;
+  senha: string;
+  cargo?: string;
+  perfil: 'SERVICOS' | 'ESTOQUE';
+}
+
+export interface AtualizarMembroParams {
+  nome?: string;
+  cargo?: string;
+  perfil?: 'SERVICOS' | 'ESTOQUE';
+  senha?: string;
+}
+
+// Conta de e-mail própria da oficina pra enviar as OS (em vez da conta
+// compartilhada do MECANIX) — configurada na aba "E-mail" do perfil.
+export interface EmailConfig {
+  contaPropriaConfigurada: boolean;
+  email?: string;
+  nomeRemetente?: string;
+  remetenteAtual: string;
+}
+
+export interface EmailConfigParams {
+  email?: string;
+  senha?: string;
+  nomeRemetente?: string;
+  removerCredenciais?: boolean;
 }
 
 export interface CadastroRequest {
   nomeFantasia: string;
   razaoSocial: string;
   cnpj: string;
+  tipoDocumento: 'CNPJ' | 'CPF';
+  planoTipo?: 'GRATIS' | 'MENSAL' | 'ANUAL';
   telefoneEmpresa?: string;
-  enderecoEmpresa?: string;
+  cepEmpresa?: string;
+  ruaEmpresa?: string;
+  numeroEmpresa?: string;
+  bairroEmpresa?: string;
+  cidadeEmpresa?: string;
+  ufEmpresa?: string;
   aceiteTermos: boolean;
   nomeUsuario: string;
   emailUsuario: string;
   senha: string;
+}
+
+export interface Plano {
+  tipo: 'GRATIS' | 'MENSAL' | 'ANUAL';
+  nome: string;
+  precoCobranca: number;
+  cicloMeses: number;
+  trialMeses: number;
+  precoEquivalenteMensal: number;
+  destaques: string[];
+}
+
+export interface CheckoutParams {
+  plano: string;
+  formaPagamento: 'CARTAO' | 'PIX';
+  cartaoNumero?: string;
+  cartaoNome?: string;
+  cartaoValidade?: string;
+  cartaoCvv?: string;
+  gateway?: string;
+}
+
+export interface CheckoutResult {
+  checkoutUrl?: string;
+  sandbox: boolean;
+  mensagem?: string;
 }
 
 export interface Cliente {
@@ -27,7 +119,12 @@ export interface Cliente {
   cpf: string;
   telefone?: string;
   email?: string;
-  endereco?: string;
+  cep?: string;
+  rua?: string;
+  numero?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
   totalVeiculos: number;
   totalOrdens: number;
 }
@@ -114,13 +211,19 @@ async function apiFetch<T>(method: string, path: string, body?: unknown): Promis
 
   if (res.status === 401) {
     sessionStorage.removeItem('mecanix_user');
-    window.location.href = '/login';
+    // Em páginas públicas (login/cadastro) uma chamada opcional que volte 401
+    // (ex: GET /planos antes do backend ter sido reiniciado com a exclusão de
+    // sessão) não pode te chutar de volta pro login no meio do cadastro — é
+    // isso que causava a tela "piscar" pro /cadastro e voltar pro /login.
+    const paginaPublica = window.location.pathname === '/login' || window.location.pathname === '/cadastro';
+    if (!paginaPublica) window.location.href = '/login';
     return null as T;
   }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ erro: 'Erro na requisição' }));
-    throw new Error(err.erro || 'Erro na requisição');
+    const detalhe = Array.isArray(err.detalhes) && err.detalhes.length ? ': ' + err.detalhes.join('; ') : '';
+    throw new Error((err.erro || 'Erro na requisição') + detalhe);
   }
 
   if (res.status === 204) return null as T;
@@ -132,6 +235,25 @@ export const authAPI = {
   cadastro: (dados: CadastroRequest) => apiFetch<User>('POST', '/auth/cadastro', dados),
   logout:  () => apiFetch<void>('POST', '/auth/logout'),
   me:      () => apiFetch<User>('GET', '/auth/me'),
+  atualizarPerfil: (dados: PerfilParams) => apiFetch<User>('PUT', '/auth/perfil', dados),
+  alterarSenha:    (dados: SenhaParams) => apiFetch<{ msg: string }>('PUT', '/auth/senha', dados),
+};
+
+// Acessos de funcionário (perfil SERVICOS/ESTOQUE) — só o administrador
+// consegue chamar essas rotas (ver EquipeController no backend).
+export const equipeAPI = {
+  listar:    () => apiFetch<MembroEquipe[]>('GET', '/equipe'),
+  criar:     (dados: CriarMembroParams) => apiFetch<MembroEquipe>('POST', '/equipe', dados),
+  atualizar: (id: number, dados: AtualizarMembroParams) => apiFetch<MembroEquipe>('PUT', `/equipe/${id}`, dados),
+  remover:   (id: number) => apiFetch<void>('DELETE', `/equipe/${id}`),
+};
+
+// Conta de e-mail própria da oficina pra enviar as OS — só o administrador
+// consegue chamar essas rotas (ver EmailConfigController no backend).
+export const emailConfigAPI = {
+  buscar:    () => apiFetch<EmailConfig>('GET', '/empresa/email'),
+  atualizar: (dados: EmailConfigParams) => apiFetch<EmailConfig>('PUT', '/empresa/email', dados),
+  testar:    (destinatario: string) => apiFetch<{ msg: string }>('POST', '/empresa/email/testar', { destinatario }),
 };
 
 export const clientesAPI = {
@@ -177,6 +299,15 @@ export const dashboardAPI = {
   get: () => apiFetch<DashboardData>('GET', '/dashboard'),
 };
 
+// Público — usado na tela de cadastro, antes de existir conta.
+export const planosAPI = {
+  listar: () => apiFetch<Plano[]>('GET', '/planos'),
+};
+
+export const assinaturasAPI = {
+  checkout: (dados: CheckoutParams) => apiFetch<CheckoutResult>('POST', '/assinaturas/checkout', dados),
+};
+
 // ── HELPERS ──
 export function osNum(id: number) {
   return '#' + String(id).padStart(4, '0');
@@ -201,11 +332,41 @@ export function maskPhone(value: string): string {
   return '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
 }
 
+export function isPhoneValid(value: string): boolean {
+  if (!value) return true; // vazio é opcional, sem aviso
+  return /^\(\d{2}\) \d{4,5}-\d{4}$/.test(value);
+}
+
 export function maskPlate(value: string): string {
   let v = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
   if (v.length >= 5 && /[A-Z]/.test(v[4])) return v;
   if (v.length > 3) return v.slice(0,3) + '-' + v.slice(3);
   return v;
+}
+
+export function maskCpf(value: string): string {
+  const v = value.replace(/\D/g, '').slice(0, 11);
+  if (v.length <= 3)  return v;
+  if (v.length <= 6)  return v.slice(0,3) + '.' + v.slice(3);
+  if (v.length <= 9)  return v.slice(0,3) + '.' + v.slice(3,6) + '.' + v.slice(6);
+  return v.slice(0,3) + '.' + v.slice(3,6) + '.' + v.slice(6,9) + '-' + v.slice(9);
+}
+
+export function maskCep(value: string): string {
+  const v = value.replace(/\D/g, '').slice(0, 8);
+  if (v.length <= 5) return v;
+  return v.slice(0,5) + '-' + v.slice(5);
+}
+
+export function maskCartao(value: string): string {
+  const v = value.replace(/\D/g, '').slice(0, 16);
+  return (v.match(/.{1,4}/g) || []).join(' ');
+}
+
+export function maskValidadeCartao(value: string): string {
+  const v = value.replace(/\D/g, '').slice(0, 4);
+  if (v.length <= 2) return v;
+  return v.slice(0, 2) + '/' + v.slice(2);
 }
 
 export function maskCnpj(value: string): string {
@@ -248,6 +409,8 @@ export const TIPO_COLORS: Record<string, string> = {
 export const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Acesso total', SERVICOS: 'Atendimento', ESTOQUE: 'Estoque',
 };
+
+export const UF_LIST = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 export const ROLE_COLORS: Record<string, string> = {
   ADMIN: 'var(--or)', SERVICOS: 'var(--bl)', ESTOQUE: 'var(--gn)',

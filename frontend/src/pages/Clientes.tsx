@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { clientesAPI, veiculosAPI, maskPhone, TIPO_LABELS, TIPO_COLORS, type Cliente, type Veiculo } from '../api'
+import { clientesAPI, veiculosAPI, maskPhone, maskCpf, maskCep, isPhoneValid, UF_LIST, TIPO_LABELS, TIPO_COLORS, type Cliente, type Veiculo } from '../api'
 
 function ClienteList() {
   const navigate = useNavigate()
@@ -89,7 +89,12 @@ function ClienteForm() {
   const [cpf, setCpf] = useState('')
   const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
-  const [endereco, setEndereco] = useState('')
+  const [cep, setCep] = useState('')
+  const [rua, setRua] = useState('')
+  const [numero, setNumero] = useState('')
+  const [bairro, setBairro] = useState('')
+  const [cidade, setCidade] = useState('')
+  const [uf, setUf] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -99,7 +104,9 @@ function ClienteForm() {
     if (!editId) return
     setLoading(true)
     clientesAPI.buscar(editId).then(c => {
-      setNome(c.nome); setCpf(c.cpf); setTelefone(c.telefone || ''); setEmail(c.email || ''); setEndereco(c.endereco || '')
+      setNome(c.nome); setCpf(c.cpf); setTelefone(c.telefone || ''); setEmail(c.email || '')
+      setCep(c.cep || ''); setRua(c.rua || ''); setNumero(c.numero || '')
+      setBairro(c.bairro || ''); setCidade(c.cidade || ''); setUf(c.uf || '')
     }).finally(() => setLoading(false))
     veiculosAPI.listarPorCliente(editId).then(setVeiculos)
   }, [editId])
@@ -107,9 +114,10 @@ function ClienteForm() {
   async function save() {
     if (!nome || !cpf) { setError('Nome e CPF são obrigatórios'); return }
     setSaving(true); setError('')
+    const dados = { nome, cpf, telefone, email, cep, rua, numero, bairro, cidade, uf }
     try {
-      if (editId) await clientesAPI.atualizar(editId, { nome, cpf, telefone, email, endereco })
-      else await clientesAPI.criar({ nome, cpf, telefone, email, endereco })
+      if (editId) await clientesAPI.atualizar(editId, dados)
+      else await clientesAPI.criar(dados)
       navigate('/clientes')
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro ao salvar')
@@ -133,19 +141,45 @@ function ClienteForm() {
             </div>
             <div className="fg">
               <label>CPF *</label>
-              <input className="finp" type="text" placeholder="000.000.000-00" maxLength={14} value={cpf} onChange={e => setCpf(e.target.value)} />
+              <input className="finp" type="text" placeholder="000.000.000-00" maxLength={14} value={cpf} onChange={e => setCpf(maskCpf(e.target.value))} />
             </div>
             <div className="fg">
               <label>Telefone</label>
               <input className="finp" type="tel" placeholder="(41) 99999-0000" maxLength={15} value={telefone} onChange={e => setTelefone(maskPhone(e.target.value))} />
+              {!isPhoneValid(telefone) && (
+                <div style={{ fontSize: 12, color: '#f59e0b', marginTop: 4 }}>Telefone inválido</div>
+              )}
             </div>
             <div className="fg full">
               <label>E-mail</label>
               <input className="finp" type="email" placeholder="email@exemplo.com" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
-            <div className="fg full">
-              <label>Endereço</label>
-              <input className="finp" type="text" placeholder="Rua, número, bairro, cidade - UF" value={endereco} onChange={e => setEndereco(e.target.value)} />
+            <div className="fg">
+              <label>CEP</label>
+              <input className="finp" type="text" placeholder="00000-000" maxLength={9} value={cep} onChange={e => setCep(maskCep(e.target.value))} />
+            </div>
+            <div className="fg">
+              <label>Cidade</label>
+              <input className="finp" type="text" placeholder="Curitiba" value={cidade} onChange={e => setCidade(e.target.value)} />
+            </div>
+            <div className="fg">
+              <label>Estado</label>
+              <select className="finp" value={uf} onChange={e => setUf(e.target.value)}>
+                <option value="">UF</option>
+                {UF_LIST.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label>Bairro</label>
+              <input className="finp" type="text" placeholder="Centro" value={bairro} onChange={e => setBairro(e.target.value)} />
+            </div>
+            <div className="fg" style={{ flex: 2 }}>
+              <label>Rua</label>
+              <input className="finp" type="text" placeholder="Rua das Flores" value={rua} onChange={e => setRua(e.target.value)} />
+            </div>
+            <div className="fg">
+              <label>Número</label>
+              <input className="finp" type="text" placeholder="100" value={numero} onChange={e => setNumero(e.target.value)} />
             </div>
           </div>
           {error && <div style={{ background: 'var(--rdd)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: 'var(--rd)', marginBottom: 12 }}>{error}</div>}

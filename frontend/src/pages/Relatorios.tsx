@@ -2,25 +2,25 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import { ordensAPI, clientesAPI, veiculosAPI, estoqueAPI, fmtCur, type OrdemServico, type Cliente, type Veiculo, type EstoqueItem } from '../api'
 
-// Gráfico de barras vertical em SVG puro
+// Gráfico de barras vertical em HTML/CSS: o texto mantém o tamanho em qualquer largura de tela
 function BarChart({ data }: { data: { label: string; value: number }[] }) {
   const max = Math.max(...data.map(d => d.value), 1)
-  const W = 60, H = 160
+  const H = 230 // altura da maior barra, em px
   return (
-    <svg viewBox={`0 0 ${data.length * W} ${H + 40}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label="Faturamento por mês">
-      {data.map((d, i) => {
-        const h = Math.round(d.value / max * H)
-        return (
-          <g key={d.label}>
-            <rect x={i * W + 12} y={H - h + 16} width={W - 24} height={Math.max(h, 2)} rx={5} fill="var(--or)" opacity={i === data.length - 1 ? 1 : .55} />
-            <text x={i * W + W / 2} y={H - h + 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--tx)">
-              {d.value ? d.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''}
-            </text>
-            <text x={i * W + W / 2} y={H + 34} textAnchor="middle" fontSize="12" fill="var(--tx2)">{d.label}</text>
-          </g>
-        )
-      })}
-    </svg>
+    <div role="img" aria-label="Faturamento por mês" style={{ display: 'flex', alignItems: 'flex-end', gap: 10, paddingTop: 8 }}>
+      {data.map((d, i) => (
+        <div key={d.label} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
+            {d.value ? d.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''}
+          </span>
+          <div style={{
+            width: '100%', maxWidth: 56, height: Math.max(Math.round(d.value / max * H), 2), borderRadius: '6px 6px 0 0',
+            background: 'var(--or)', opacity: i === data.length - 1 ? 1 : .55, printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact',
+          }} />
+          <span style={{ fontSize: 13, color: 'var(--tx2)' }}>{d.label}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -88,13 +88,16 @@ export default function Relatorios() {
 
   const svcMap: Record<string, number> = {}
   ordens.forEach(o => (o.servicos || []).forEach(s => {
-    const k = (s.descricao || '').trim().toLowerCase()
-    const cat = k.includes('óleo') || k.includes('oleo') ? 'Troca de óleo'
+    // compara sem acentos: "Diagnóstico" e "diagnostico" caem na mesma categoria
+    const k = (s.descricao || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    const cat = k.includes('oleo') ? 'Troca de óleo'
       : k.includes('frei') ? 'Serviço de freios'
-      : k.includes('elétri') ? 'Elétrica'
+      : k.includes('eletri') ? 'Elétrica'
       : k.includes('suspens') || k.includes('amort') ? 'Suspensão'
       : k.includes('alinha') ? 'Alinhamento'
       : k.includes('diagnos') ? 'Diagnóstico'
+      : k.includes('correia') || k.includes('embreag') || k.includes('vela') ? 'Motor'
+      : k.includes('revis') ? 'Revisão'
       : 'Outros'
     svcMap[cat] = (svcMap[cat] || 0) + 1
   }))
@@ -107,8 +110,6 @@ export default function Relatorios() {
     cliRev[k] = (cliRev[k] || 0) + (parseFloat(String(o.total)) || 0)
   })
   const topCli = Object.entries(cliRev).sort((a, b) => b[1] - a[1]).slice(0, 5)
-
-  void veiculos
 
   // Faturamento das OS concluídas nos últimos 6 meses (inclui o atual)
   const hoje = new Date()
@@ -134,7 +135,7 @@ export default function Relatorios() {
           { lbl: 'Faturamento concluído', val: fmtCur(rev), sub: `${done.length} OS concluída(s)`, ico: 'var(--or)', bg: 'var(--ord)', mac: 'var(--or)' },
           { lbl: 'Ticket médio', val: fmtCur(ticket), sub: 'por OS concluída', ico: 'var(--bl)', bg: 'var(--bld)', mac: 'var(--bl)' },
           { lbl: 'Em aberto (potencial)', val: fmtCur(revOp), sub: `${open.length} OS em andamento`, ico: 'var(--yw)', bg: 'var(--ywd)', mac: 'var(--yw)' },
-          { lbl: 'Total de clientes', val: String(clientes.length), sub: `${clientes.length} cadastrado(s)`, ico: 'var(--gn)', bg: 'var(--gnd)', mac: 'var(--gn)' },
+          { lbl: 'Total de clientes', val: String(clientes.length), sub: `${veiculos.length} veículo(s) cadastrado(s)`, ico: 'var(--gn)', bg: 'var(--gnd)', mac: 'var(--gn)' },
         ].map(m => (
           <div key={m.lbl} className="met" style={{ '--mac': m.mac, '--macd': m.bg } as React.CSSProperties}>
             <div className="mlbl">{m.lbl}</div>

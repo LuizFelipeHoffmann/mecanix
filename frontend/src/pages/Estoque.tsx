@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { useNavigate, useParams, Routes, Route } from 'react-router-dom'
 import Layout from '../components/Layout'
+import { useModal } from '../components/Modal'
 import { estoqueAPI, fmtCur, TIPO_LABELS, type EstoqueItem } from '../api'
 
 const CATS = ['Filtros', 'Freios', 'Ignição', 'Lubrificantes', 'Suspensão', 'Motor', 'Elétrico', 'Transmissão', 'Outros']
@@ -101,6 +102,7 @@ function EstoqueList() {
 function EstoqueForm() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const { showAlert } = useModal()
   const editId = id ? parseInt(id) : null
   const title = editId ? 'Editar Item' : 'Novo Item'
 
@@ -111,6 +113,7 @@ function EstoqueForm() {
   const [quantidadeMinima, setQuantidadeMinima] = useState('')
   const [precoUnitario, setPrecoUnitario] = useState('')
   const [tipos, setTipos] = useState<string[]>([])
+  const [tipoInput, setTipoInput] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -125,8 +128,22 @@ function EstoqueForm() {
     }).finally(() => setLoading(false))
   }, [editId])
 
-  function toggleTipo(t: string) {
-    setTipos(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  // "Compatível com" agora é texto livre (não precisa mais selecionar de uma
+  // lista fixa) — digita e adiciona como uma etiqueta; funciona normal sem
+  // adicionar nenhuma também, o campo é opcional.
+  function addTipo() {
+    const v = tipoInput.trim()
+    if (!v || tipos.includes(v)) { setTipoInput(''); return }
+    setTipos(prev => [...prev, v])
+    setTipoInput('')
+  }
+
+  function removeTipo(t: string) {
+    setTipos(prev => prev.filter(x => x !== t))
+  }
+
+  function onTipoKey(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') { e.preventDefault(); addTipo() }
   }
 
   async function save() {
@@ -144,7 +161,7 @@ function EstoqueForm() {
   async function del() {
     if (!editId || !confirm('Excluir este item?')) return
     try { await estoqueAPI.deletar(editId); navigate('/estoque') }
-    catch (e: unknown) { alert('Erro: ' + (e instanceof Error ? e.message : '')) }
+    catch (e: unknown) { showAlert('Erro: ' + (e instanceof Error ? e.message : '')) }
   }
 
   const actions = <button className="btn btn-g sm" onClick={() => navigate('/estoque')}>← Voltar</button>
@@ -163,10 +180,11 @@ function EstoqueForm() {
             </div>
             <div className="fg">
               <label>Categoria</label>
-              <select className="finp" value={categoria} onChange={e => setCategoria(e.target.value)}>
-                <option value="">Selecione...</option>
-                {CATS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <input className="finp" list="categorias-lista" type="text" placeholder="Ex: Filtros" maxLength={40}
+                value={categoria} onChange={e => setCategoria(e.target.value)} />
+              <datalist id="categorias-lista">
+                {CATS.map(c => <option key={c} value={c} />)}
+              </datalist>
             </div>
             <div className="fg full">
               <label>Nome *</label>
@@ -186,13 +204,26 @@ function EstoqueForm() {
             </div>
             <div className="fg full">
               <label>Compatível com</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 8 }}>
-                {TIPOS_EST.map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={tipos.includes(t)} onChange={() => toggleTipo(t)} />
-                    {TIPO_LABELS[t] || t}
-                  </label>
-                ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <input className="finp" list="tipos-lista" type="text" placeholder="Ex: Sedan, Moto, Caminhão..." maxLength={20}
+                  value={tipoInput} onChange={e => setTipoInput(e.target.value)} onKeyDown={onTipoKey} />
+                <button type="button" className="btn btn-g sm" onClick={addTipo}>+ Adicionar</button>
+              </div>
+              <datalist id="tipos-lista">
+                {TIPOS_EST.map(t => <option key={t} value={t}>{TIPO_LABELS[t] || t}</option>)}
+              </datalist>
+              {tipos.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                  {tipos.map(t => (
+                    <span key={t} className="badge bgy" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {TIPO_LABELS[t] || t}
+                      <span onClick={() => removeTipo(t)} style={{ cursor: 'pointer', fontWeight: 700 }}>×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--tx3)', marginTop: 6 }}>
+                Opcional — deixe em branco se a peça serve pra qualquer veículo.
               </div>
             </div>
           </div>

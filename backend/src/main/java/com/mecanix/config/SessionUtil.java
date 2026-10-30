@@ -14,4 +14,10 @@ public class SessionUtil {
         UsuarioResponse u = (UsuarioResponse) s.getAttribute("usuario");
         return u.getEmpresaId();
     }
+
+    public static Long usuarioId(HttpServletRequest req) {
+        HttpSession s = req.getSession(false);
+        UsuarioResponse u = (UsuarioResponse) s.getAttribute("usuario");
+        return u.getId();
+    }
 }

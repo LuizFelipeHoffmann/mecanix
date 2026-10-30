@@ -6,6 +6,9 @@ interface AuthContextType {
   login: (email: string, senha: string) => Promise<void>
   cadastrar: (dados: CadastroRequest) => Promise<void>
   logout: () => Promise<void>
+  // Atualiza o usuário em memória + sessionStorage depois de uma edição de
+  // perfil, sem precisar deslogar/logar de novo pra ver o nome/foto novos.
+  atualizarUsuario: (u: User) => void
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -13,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   cadastrar: async () => {},
   logout: async () => {},
+  atualizarUsuario: () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -36,8 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  function atualizarUsuario(u: User) {
+    saveUser(u)
+    setUser(u)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, cadastrar, logout }}>
+    <AuthContext.Provider value={{ user, login, cadastrar, logout, atualizarUsuario }}>
       {children}
     </AuthContext.Provider>
   )

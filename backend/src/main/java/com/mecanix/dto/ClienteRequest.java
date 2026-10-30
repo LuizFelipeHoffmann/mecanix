@@ -17,10 +17,19 @@ public class ClienteRequest {
     @Email(message = "E-mail inválido")
     private String email;
 
-    @Pattern(regexp = "^(\\(\\d{2}\\)\\s?)?(9?\\d{4}[-\\s]?\\d{4})?$", message = "Telefone inválido")
+    // sem validação de formato: o cadastro não deve travar por telefone inválido
     private String telefone;
 
-    private String endereco;
+    @Pattern(regexp = "(\\d{5}-?\\d{3})?", message = "CEP inválido")
+    private String cep;
+
+    private String rua;
+    private String numero;
+    private String bairro;
+    private String cidade;
+
+    @Pattern(regexp = "([A-Za-z]{2})?", message = "UF inválida")
+    private String uf;
 
     public String getNome() { return nome; }
     public void setNome(String n) { this.nome = n; }
@@ -30,6 +39,16 @@ public class ClienteRequest {
     public void setEmail(String e) { this.email = e; }
     public String getTelefone() { return telefone; }
     public void setTelefone(String t) { this.telefone = t; }
-    public String getEndereco() { return endereco; }
-    public void setEndereco(String e) { this.endereco = e; }
+    public String getCep() { return cep; }
+    public void setCep(String c) { this.cep = c; }
+    public String getRua() { return rua; }
+    public void setRua(String r) { this.rua = r; }
+    public String getNumero() { return numero; }
+    public void setNumero(String n) { this.numero = n; }
+    public String getBairro() { return bairro; }
+    public void setBairro(String b) { this.bairro = b; }
+    public String getCidade() { return cidade; }
+    public void setCidade(String c) { this.cidade = c; }
+    public String getUf() { return uf; }
+    public void setUf(String u) { this.uf = u; }
 }
